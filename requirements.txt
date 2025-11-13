@@ -1,0 +1,8 @@
+# MicroPython ESP32-S3 Development Tools
+
+# esptool - Flash MicroPython firmware to ESP32 boards
+esptool>=4.0
+
+# mpremote - Official MicroPython remote control and file management
+mpremote>=1.0
+
