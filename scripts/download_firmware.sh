@@ -4,7 +4,11 @@
 
 set -e
 
-FIRMWARE_DIR="firmware"
+# Resolve project root
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJECT_ROOT=$(dirname "$SCRIPT_DIR")
+
+FIRMWARE_DIR="$PROJECT_ROOT/firmware"
 FIRMWARE_URL="https://micropython.org/resources/firmware/ESP32_GENERIC_S3-20250911-v1.26.1.bin"
 FIRMWARE_FILE="ESP32_GENERIC_S3-20250911-v1.26.1.bin"
 
@@ -22,5 +26,5 @@ curl -L -O "$FIRMWARE_URL"
 
 echo ""
 echo "Download complete: $FIRMWARE_DIR/$FIRMWARE_FILE"
-echo "Run ./flash.sh to flash the firmware"
+echo "Run ./scripts/flash.sh to flash the firmware"
 

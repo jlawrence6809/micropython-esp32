@@ -9,13 +9,13 @@
 #   ./remote.sh repl
 
 if [ $# -eq 0 ]; then
-    echo "Usage: ./remote.sh <command> [args...]"
+    echo "Usage: ./scripts/remote.sh <command> [args...]"
     echo ""
     echo "Examples:"
-    echo "  ./remote.sh fs ls              # List files"
-    echo "  ./remote.sh fs cat boot.py     # Show file contents"
-    echo "  ./remote.sh exec 'print(123)'  # Execute Python code"
-    echo "  ./remote.sh repl               # Start REPL"
+    echo "  ./scripts/remote.sh fs ls              # List files"
+    echo "  ./scripts/remote.sh fs cat boot.py     # Show file contents"
+    echo "  ./scripts/remote.sh exec 'print(123)'  # Execute Python code"
+    echo "  ./scripts/remote.sh repl               # Start REPL"
     exit 1
 fi
 

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Connect to MicroPython REPL
-# Usage: ./monitor.sh [port]
-# Example: ./monitor.sh /dev/tty.usbmodem101
+# Usage: ./scripts/monitor.sh [port]
+# Example: ./scripts/monitor.sh /dev/tty.usbmodem101
 
 BAUD_RATE=115200
 

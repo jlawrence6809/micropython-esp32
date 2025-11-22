@@ -6,7 +6,11 @@
 
 set -e
 
-FIRMWARE_DIR="firmware"
+# Resolve project root
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJECT_ROOT=$(dirname "$SCRIPT_DIR")
+
+FIRMWARE_DIR="$PROJECT_ROOT/firmware"
 CHIP="esp32s3"
 BAUD_RATE="460800"
 
@@ -29,7 +33,7 @@ FIRMWARE_FILE=$(ls "$FIRMWARE_DIR"/ESP32_GENERIC_S3-*.bin 2>/dev/null | head -n 
 
 if [ -z "$FIRMWARE_FILE" ]; then
     echo "Error: Firmware not found in $FIRMWARE_DIR/"
-    echo "Run ./download_firmware.sh first"
+    echo "Run ./scripts/download_firmware.sh first"
     exit 1
 fi
 
@@ -59,5 +63,5 @@ esptool.py --chip "$CHIP" --port "$PORT" erase_flash
 esptool.py --chip "$CHIP" --port "$PORT" --baud "$BAUD_RATE" write_flash -z 0 "$FIRMWARE_FILE"
 
 echo ""
-echo "Done! Run ./monitor.sh to connect to the REPL"
+echo "Done! Run ./scripts/monitor.sh to connect to the REPL"
 
