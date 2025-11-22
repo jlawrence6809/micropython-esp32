@@ -71,6 +71,12 @@ esptool.py --chip esp32s3 --port /dev/tty.usbmodem* erase_flash
 esptool.py --chip esp32s3 --port /dev/tty.usbmodem* write_flash -z 0 firmware/ESP32_GENERIC_S3-*.bin
 ```
 
+## Webrepl
+
+It doesn't work over https, and opening the page will automatically redirect to https unless it is opened in an incognito window:
+
+http://micropython.org/webrepl/#10.0.0.58:8266
+
 ## Testing MicroPython
 
 Once connected to the REPL, try:
