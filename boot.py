@@ -63,3 +63,12 @@ def connect_wifi():
 # Auto-connect to WiFi on boot
 connect_wifi()
 
+# Start WebREPL if WiFi is connected
+if WIFI_SSID and WIFI_PASSWORD:
+    try:
+        import webrepl
+        webrepl.start()
+        print('WebREPL started')
+    except Exception as e:
+        print(f'WebREPL failed to start: {e}')
+
