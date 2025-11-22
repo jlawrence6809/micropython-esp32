@@ -5,8 +5,8 @@
 set -e
 
 FIRMWARE_DIR="firmware"
-FIRMWARE_URL="https://micropython.org/resources/firmware/ESP32_GENERIC_S3-20231005-v1.21.0.bin"
-FIRMWARE_FILE="ESP32_GENERIC_S3-20231005-v1.21.0.bin"
+FIRMWARE_URL="https://micropython.org/resources/firmware/ESP32_GENERIC_S3-20250911-v1.26.1.bin"
+FIRMWARE_FILE="ESP32_GENERIC_S3-20250911-v1.26.1.bin"
 
 mkdir -p "$FIRMWARE_DIR"
 cd "$FIRMWARE_DIR"
