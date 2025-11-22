@@ -20,7 +20,7 @@ pip install esptool
 ### 2. Download MicroPython Firmware
 
 ```bash
-./download_firmware.sh
+./scripts/download_firmware.sh
 ```
 
 This will download the latest stable MicroPython firmware for ESP32-S3.
@@ -30,7 +30,7 @@ This will download the latest stable MicroPython firmware for ESP32-S3.
 Connect your ESP32-S3 board via USB, then run:
 
 ```bash
-./flash.sh
+./scripts/flash.sh
 ```
 
 The script will:
@@ -40,21 +40,51 @@ The script will:
 - Flash MicroPython firmware
 - Reset the board
 
-### 4. Connect to REPL
+### 4. Deploy Code
 
-After flashing, connect to the MicroPython REPL:
-
-```bash
-./monitor.sh
-```
-
-Or manually:
+Deploy source code (Python scripts):
 
 ```bash
-screen /dev/tty.usbmodem* 115200
+./scripts/deploy_src.sh
 ```
 
-Press Ctrl+A, then K, then Y to exit screen.
+Deploy web interface (Preact app):
+
+```bash
+./scripts/deploy_web.sh
+```
+
+## Understanding MicroPython Execution
+
+### Running vs. REPL
+
+**Important:** MicroPython is single-threaded. It can either run your code (`main.py`) OR provide an interactive prompt (REPL), but not both at the same time.
+
+- **Background Mode (Normal Operation)**:
+
+  - When the board boots, it runs `boot.py` and then `main.py`.
+  - Our `main.py` starts the Web Server and enters an infinite loop.
+  - **The Web Server is ONLY active in this mode.**
+
+- **REPL Mode (Interactive)**:
+  - When you connect via `./scripts/monitor.sh` or `mpremote`, the board stops the running `main.py` (killing the web server) to give you a `>>>` prompt.
+  - This is normal! It's how you debug.
+  - To restart the server while in REPL, type:
+    ```python
+    import machine
+    machine.reset()
+    ```
+    (This will disconnect your REPL session effectively).
+
+### Viewing Logs Without Stopping Server
+
+To see what the server is doing without killing it:
+
+1.  Connect via USB.
+2.  Run `./scripts/monitor.sh`.
+3.  **Immediately** press the RESET button on the board.
+4.  You will see the boot logs.
+5.  **Do not press any keys** (Enter/Ctrl-C), or you will interrupt the server and drop into REPL.
 
 ## Manual Flashing
 
@@ -76,43 +106,6 @@ esptool.py --chip esp32s3 --port /dev/tty.usbmodem* write_flash -z 0 firmware/ES
 It doesn't work over https, and opening the page will automatically redirect to https unless it is opened in an incognito window:
 
 http://micropython.org/webrepl/#10.0.0.58:8266
-
-## Testing MicroPython
-
-Once connected to the REPL, try:
-
-```python
-import machine
-import sys
-
-# Check system info
-print(sys.implementation)
-print(sys.platform)
-
-# Blink the onboard LED (GPIO48 on DevKitC-1)
-led = machine.Pin(48, machine.Pin.OUT)
-led.on()
-led.off()
-```
-
-## Troubleshooting
-
-### Port Not Found
-
-- Make sure the board is connected via USB
-- Try pressing the BOOT button while connecting
-- Check if the USB cable supports data transfer (not just charging)
-
-### Permission Denied
-
-On macOS/Linux, you may need to add your user to dialout group or use sudo.
-
-### Board Not Entering Flash Mode
-
-1. Hold BOOT button
-2. Press and release RESET button
-3. Release BOOT button
-4. Try flashing again
 
 ## Resources
 
