@@ -1,0 +1,166 @@
+html,
+body {
+  font:
+    14px/1.21 'Helvetica Neue',
+    arial,
+    sans-serif;
+  font-weight: 400;
+  /* dark background */
+  background-color: #282c34;
+  color: blanchedalmond;
+  padding-bottom: 50px;
+  margin: 0;
+}
+
+.app-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+h1 {
+  text-align: center;
+}
+
+.GlobalInfo {
+  font-size: 1.2em;
+}
+
+.RelayForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.RelayForm.loading {
+  pointer-events: none;
+}
+
+.WifiForm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.Section {
+  /* divider */
+}
+
+.ToggleSwitch {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 200px;
+  height: 60px;
+  border-radius: 15px;
+  font-size: 1.5em;
+  cursor: pointer;
+
+  position: relative;
+
+  border: 5px solid #ccc;
+}
+
+.ToggleSwitch.loading {
+  background-color: #ccc;
+}
+
+.ToggleSwitch.force_0 {
+  background-color: red;
+  border-color: red;
+}
+
+.ToggleSwitch.force_1 {
+  background-color: green;
+  border-color: green;
+}
+
+.ToggleSwitch.force_2 {
+  border-color: blue;
+}
+
+.ToggleSwitch.force_2.auto_0 {
+  background-color: red;
+}
+
+.ToggleSwitch.force_2.auto_1 {
+  background-color: green;
+}
+
+/* Two don't cares is an off state */
+.ToggleSwitch.force_2.auto_2 {
+  background-color: red;
+}
+
+.AutomateButton {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 20%;
+  text-align: center;
+  font-size: medium;
+}
+
+.AutomateButton:hover {
+  background-color: #282c34;
+}
+
+.AutomateDialog {
+  width: 90vw;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background-color: #282c34;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.AutomateDialog .Buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Overlay dialog, cover entire page to prevent clicking */
+.FullScreenDialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  z-index: 100;
+}
+
+.FullScreenDialog.inner {
+  background-color: white;
+  padding: 1em;
+  max-width: 90%;
+  max-height: 90%;
+  overflow: auto;
+}
+
+hr {
+  width: 100%;
+}
+
+label {
+  margin-right: 10px;
+}
+
+/* Pencil emoji, flip it backwards */
+.Pencil {
+  transform: scaleX(-1);
+  display: inline-block;
+  margin-left: 5px;
+}

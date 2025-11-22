@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "baseUrl": ".",
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "node",
+    "outDir": "build",
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "lib": ["esnext", "dom"],
+    "types": ["preact"],
+    "paths": {
+      "react": ["node_modules/preact/compat"],
+      "react-dom": ["node_modules/preact/compat"]
+    }
+  },
+  "exclude": [
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "jest.config.js",
+    "coverage/**",
+    "build/**",
+    "node_modules/**"
+  ]
+}

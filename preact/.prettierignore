@@ -1,0 +1,25 @@
+# Build directories
+build/
+dist/
+
+# Dependencies
+node_modules/
+
+# Coverage reports
+coverage/
+
+# Generated files
+*.min.js
+*.min.css
+
+# Config files that should keep their formatting
+package-lock.json
+yarn.lock
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
