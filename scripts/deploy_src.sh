@@ -57,9 +57,10 @@ done
 
 echo ""
 echo "Uploading board configurations..."
-
-# Create /boards directory on device
-"$REMOTE_SCRIPT" fs mkdir :/boards 2>/dev/null || true
+# Create /boards directory on device if it doesn't exist
+if ! "$REMOTE_SCRIPT" fs ls :/boards >/dev/null 2>&1; then
+    "$REMOTE_SCRIPT" fs mkdir :/boards
+fi
 
 cd "$BOARDS_DIR"
 for file in *.json; do
