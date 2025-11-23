@@ -55,5 +55,24 @@ done
 
 echo ""
 echo "Deployment complete!"
-echo "Resetting board..."
-"$REMOTE_SCRIPT" exec "import machine; machine.reset()"
+echo "Restarting main.py..."
+
+# Soft restart: re-import and run main.py without rebooting the hardware
+"$REMOTE_SCRIPT" exec "
+import sys
+# Remove main from sys.modules to force reload
+if 'main' in sys.modules:
+    del sys.modules['main']
+if 'web_server' in sys.modules:
+    del sys.modules['web_server']
+if 'relays' in sys.modules:
+    del sys.modules['relays']
+
+# Now import and run main
+import main
+import uasyncio as asyncio
+asyncio.run(main.main())
+" &
+
+echo "Application restarted in background!"
+echo "Note: The mpremote connection will stay active. Press Ctrl+C to exit if needed."
