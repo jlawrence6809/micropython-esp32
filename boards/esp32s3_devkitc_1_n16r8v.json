@@ -3,6 +3,7 @@
   "chip": "ESP32-S3",
   "description": "ESP32-S3 DevKit with 16MB Flash and 8MB PSRAM",
   "reference_url": "http://wiki.fluidnc.com/en/hardware/ESP32-S3_Pin_Reference",
+  "clock_speed": 240000000,
   "valid_gpio_pins": [
     1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40,
     41, 42, 47, 48

@@ -81,6 +81,10 @@ class BoardConfig:
         """Get I2C pin configuration."""
         return self.config.get('i2c', {'scl': -1, 'sda': -1})
     
+    def get_clock_speed(self):
+        """Get recommended CPU clock speed in Hz (e.g., 240000000 for 240 MHz)."""
+        return self.config.get('clock_speed', None)
+    
     def to_dict(self):
         """Return full configuration as dictionary."""
         return self.config.copy()

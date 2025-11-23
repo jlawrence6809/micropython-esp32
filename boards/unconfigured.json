@@ -2,6 +2,7 @@
   "name": "Unconfigured Board",
   "chip": "Unknown",
   "description": "No board configuration selected. Please configure your board in config.json",
+  "clock_speed": null,
   "valid_gpio_pins": [],
   "reserved_pins": [],
   "notes": {

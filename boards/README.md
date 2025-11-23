@@ -52,6 +52,7 @@ This directory contains board-specific configuration files for different ESP32 v
   "name": "Board Name",
   "chip": "ESP32-XX",
   "description": "Board description",
+  "clock_speed": 240000000,
   "valid_gpio_pins": [1, 2, 4, ...],
   "reserved_pins": [0, 3, ...],
   "notes": {
@@ -68,6 +69,21 @@ This directory contains board-specific configuration files for different ESP32 v
   }
 }
 ```
+
+### Field Descriptions
+
+- **`name`**: Human-readable board name (displayed in UI)
+- **`chip`**: Chip type (e.g., "ESP32-S3", "ESP32-C6")
+- **`description`**: Brief description of the board
+- **`clock_speed`**: CPU frequency in Hz (e.g., 240000000 for 240 MHz). Set at boot time.
+  - ESP32/ESP32-S3: Supports up to 240 MHz
+  - ESP32-C6: Supports up to 160 MHz
+  - Set to `null` to use default frequency
+- **`valid_gpio_pins`**: Array of GPIO pins safe to use
+- **`reserved_pins`**: Array of pins that should NOT be used (flash, USB, etc.)
+- **`notes`**: Object with pin-specific notes/warnings
+- **`default_sensor_pins`**: Recommended pins for common sensors (-1 = not configured)
+- **`i2c`**: Default I2C pins (scl/sda)
 
 ## Usage
 

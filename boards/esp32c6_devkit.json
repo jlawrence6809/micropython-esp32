@@ -2,6 +2,7 @@
   "name": "ESP32-C6-DevKit",
   "chip": "ESP32-C6",
   "description": "ESP32-C6 Development Kit",
+  "clock_speed": 160000000,
   "valid_gpio_pins": [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23
   ],

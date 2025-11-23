@@ -24,6 +24,22 @@ print(f"✓ ConfigManager initialized")
 instances.board = BoardConfig(instances.config.get_board_config_file())
 print(f"✓ BoardConfig initialized: {instances.board.get_name()}")
 
+# Set CPU clock speed from board config
+try:
+    import machine
+    clock_speed = instances.board.get_clock_speed()
+    if clock_speed:
+        current_freq = machine.freq()
+        if current_freq != clock_speed:
+            machine.freq(clock_speed)
+            print(f"✓ CPU frequency set to {clock_speed // 1_000_000} MHz (was {current_freq // 1_000_000} MHz)")
+        else:
+            print(f"✓ CPU frequency already at {clock_speed // 1_000_000} MHz")
+    else:
+        print(f"✓ CPU frequency: {machine.freq() // 1_000_000} MHz (using default)")
+except Exception as e:
+    print(f"⚠ Failed to set CPU frequency: {e}")
+
 instances.wifi = WiFiManager(instances.config)
 print(f"✓ WiFiManager initialized")
 
