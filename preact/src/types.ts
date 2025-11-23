@@ -15,6 +15,8 @@ export type Relay = Nominal<string, 'Relay'>;
  *
  * value: the actual current state of the relay (true = on, false = off)
  * auto: whether in auto mode (true) or manual/forced mode (false)
+ * defaultValue: the default value (on/off) to use on boot
+ * defaultAuto: the default mode (auto/manual) to use on boot
  */
 export type RelayConfig = {
   pin: number;
@@ -23,6 +25,7 @@ export type RelayConfig = {
   value: boolean; // Current state (on/off) - determines button color
   auto: boolean; // true = auto mode (rule-driven), false = manual (forced)
   defaultValue: boolean; // default state on boot
+  defaultAuto: boolean; // default mode on boot (true = auto, false = manual)
   rule: string;
 };
 

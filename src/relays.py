@@ -23,9 +23,9 @@ class RelayManager:
                     if 'value' not in relay:
                         relay['value'] = relay.get('defaultValue', False)
                     
-                    # Initialize auto mode (default to manual/forced)
+                    # Initialize auto mode from defaultAuto if not present
                     if 'auto' not in relay:
-                        relay['auto'] = False
+                        relay['auto'] = relay.get('defaultAuto', False)
                             
         except (OSError, ValueError):
             print("No relay config found, using default empty config.")
@@ -43,6 +43,7 @@ class RelayManager:
                 'label': relay['label'],
                 'isInverted': relay.get('isInverted', False),
                 'defaultValue': relay.get('defaultValue', False),
+                'defaultAuto': relay.get('defaultAuto', False),
                 'rule': relay.get('rule', '["NOP"]')
             }
             relays_for_save.append(relay_copy)

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Section } from '../components/Section';
 import { AutomateDialog } from '../components/AutomateDialog';
+import { AddRelayDialog } from '../components/AddRelayDialog';
 import { Relay, RelayConfig } from '../types';
 import { fetchGpioOptions, fetchRelayConfig, postRelayConfig } from '../api';
 
@@ -40,12 +41,11 @@ export const RelayControls = () => {
     'loading',
   );
   const [updating, setUpdating] = useState<boolean>(false);
-  const [adding, setAdding] = useState<boolean>(false);
-  const [newRelay, setNewRelay] = useState<Partial<RelayConfig>>({});
 
   const [automateDialogRelay, setAutomateDialogRelay] = useState<Relay | null>(
     null,
   );
+  const [addDialogOpen, setAddDialogOpen] = useState<boolean>(false);
 
   useEffect(() => {
     fetchRelayConfig().then((json) => {
@@ -89,6 +89,7 @@ export const RelayControls = () => {
         | 'label'
         | 'rule'
         | 'defaultValue'
+        | 'defaultAuto'
         | 'isInverted'
         | 'value'
         | 'auto'
@@ -104,35 +105,20 @@ export const RelayControls = () => {
     await updateEntireConfig(updatedConfigs);
   };
 
-  const addRelay = async () => {
-    if (newRelay.pin === undefined || relayConfigs === 'loading') return;
-    setAdding(true);
-    try {
-      // Generate default label if none provided
-      const label =
-        newRelay.label?.trim() || `Relay ${relayConfigs.length + 1}`;
+  const addRelay = async (newRelay: Omit<RelayConfig, 'value' | 'auto'>) => {
+    if (relayConfigs === 'loading') return;
 
-      // Create new relay config
-      const relayPayload: RelayConfig = {
-        pin: -1,
-        isInverted: false,
-        label,
-        value: false, // Start off
-        auto: false, // Start in manual mode
-        defaultValue: false,
-        rule: '["NOP"]',
-        ...newRelay,
-      };
+    // Create new relay config with runtime state initialized from defaults
+    const relayPayload: RelayConfig = {
+      ...newRelay,
+      value: newRelay.defaultValue,
+      auto: newRelay.defaultAuto,
+    };
 
-      // Add to existing config
-      const updatedConfigs = [...relayConfigs, relayPayload];
-      await updateEntireConfig(updatedConfigs);
-
-      await refreshGpioOptions();
-      setNewRelay({});
-    } finally {
-      setAdding(false);
-    }
+    // Add to existing config
+    const updatedConfigs = [...relayConfigs, relayPayload];
+    await updateEntireConfig(updatedConfigs);
+    await refreshGpioOptions();
   };
 
   return (
@@ -149,7 +135,7 @@ export const RelayControls = () => {
           {relayConfigs.map((config) => {
             const relay: Relay = config.label as Relay;
             const label = config.label;
-            const isLoading = updating || adding;
+            const isLoading = updating;
 
             const isAuto = config.auto;
             const isOn = config.value;
@@ -180,70 +166,12 @@ export const RelayControls = () => {
           })}
 
           <div style={{ marginTop: '1rem' }}>
-            <h4>Add Relay</h4>
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.5rem',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-              }}
+            <button
+              onClick={() => setAddDialogOpen(true)}
+              style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}
             >
-              <select
-                value={newRelay.pin == null ? '' : newRelay.pin}
-                onChange={(e) =>
-                  setNewRelay({
-                    ...newRelay,
-                    pin:
-                      e.currentTarget.value === ''
-                        ? null
-                        : parseInt(e.currentTarget.value, 10),
-                  })
-                }
-              >
-                <option value="">Select GPIO</option>
-                {gpioOptions !== 'loading' &&
-                  gpioOptions.map((p) => (
-                    <option key={p} value={p}>
-                      GPIO {p}
-                    </option>
-                  ))}
-              </select>
-              <input
-                type="text"
-                placeholder="Label (optional)"
-                value={newRelay.label}
-                onChange={(e) =>
-                  setNewRelay({ ...newRelay, label: e.currentTarget.value })
-                }
-                style={{ minWidth: '120px' }}
-              />
-              <label
-                style={{
-                  display: 'flex',
-                  gap: '0.25rem',
-                  alignItems: 'center',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={newRelay.isInverted}
-                  onChange={(e) =>
-                    setNewRelay({
-                      ...newRelay,
-                      isInverted: e.currentTarget.checked,
-                    })
-                  }
-                />
-                Inverted
-              </label>
-              <button
-                disabled={adding || newRelay.pin == null}
-                onClick={addRelay}
-              >
-                {adding ? 'Adding...' : 'Add Relay'}
-              </button>
-            </div>
+              + Add Relay
+            </button>
           </div>
 
           {automateDialogRelay && (
@@ -268,6 +196,15 @@ export const RelayControls = () => {
                 updateRelayProperty(automateDialogRelay, { rule });
               }}
               onClose={() => setAutomateDialogRelay(null)}
+            />
+          )}
+
+          {addDialogOpen && (
+            <AddRelayDialog
+              isOpen={true}
+              gpioOptions={gpioOptions === 'loading' ? [] : gpioOptions}
+              onSubmit={addRelay}
+              onClose={() => setAddDialogOpen(false)}
             />
           )}
         </>
