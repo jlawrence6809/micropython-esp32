@@ -22,8 +22,13 @@ class SystemStatus:
         status = {}
         
         # Board info
-        status['Board'] = self.board.get_name()
+        board_name = self.board.get_name()
+        status['Board'] = board_name
         status['Chip'] = self.board.get_chip()
+        
+        # Warn if board is unconfigured
+        if board_name == "Unconfigured Board":
+            status['⚠️ WARNING'] = "Board not configured! Set board_config in config.json"
         status['MicroPython'] = self._get_micropython_version()
         
         # Network info

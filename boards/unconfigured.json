@@ -1,0 +1,20 @@
+{
+  "name": "Unconfigured Board",
+  "chip": "Unknown",
+  "description": "No board configuration selected. Please configure your board in config.json",
+  "valid_gpio_pins": [],
+  "reserved_pins": [],
+  "notes": {
+    "warning": "Board not configured! Set 'board_config' in config.json to your actual board type."
+  },
+  "default_sensor_pins": {
+    "ds18b20": -1,
+    "dht22": -1,
+    "photo_sensor": -1,
+    "light_switch": -1
+  },
+  "i2c": {
+    "scl": -1,
+    "sda": -1
+  }
+}

@@ -26,7 +26,7 @@ class Config:
                 "password": None
             },
             "hostname": "esp32",
-            "board_config": "/boards/esp32s3_devkitc_1_n16r8v.json"
+            "board_config": "/boards/unconfigured.json"
         }
     
     def save(self):
@@ -73,7 +73,7 @@ class Config:
     # Board config property
     @property
     def BOARD_CONFIG_FILE(self):
-        return self.data.get('board_config', '/boards/esp32s3_devkitc_1_n16r8v.json')
+        return self.data.get('board_config', '/boards/unconfigured.json')
     
     @BOARD_CONFIG_FILE.setter
     def BOARD_CONFIG_FILE(self, value):
