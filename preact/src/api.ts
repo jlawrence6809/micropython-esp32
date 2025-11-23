@@ -7,15 +7,10 @@ export const fetchRelayConfig = async () => {
 };
 
 export const fetchGpioOptions = async () => {
-  // TODO: Implement /api/gpio/available on backend
-  // For now, return a static list or empty list to avoid 404
-  // const data = await fetch('/api/gpio/available');
-  // const json = await data.json();
-  // const options = Object.keys(json).map((k) => parseInt(k, 10));
-  return [
-    0, 1, 2, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32,
-    33,
-  ];
+  const data = await fetch('/api/gpio/available');
+  const json = await data.json();
+  const options = Object.keys(json).map((k) => parseInt(k, 10));
+  return options;
 };
 
 export const postRelayConfig = async (updatedConfigs: RelayConfig[]) => {

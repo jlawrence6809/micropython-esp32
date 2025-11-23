@@ -9,6 +9,7 @@ set -e
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_ROOT=$(dirname "$SCRIPT_DIR")
 SRC_DIR="$PROJECT_ROOT/src"
+BOARDS_DIR="$PROJECT_ROOT/boards"
 REMOTE_SCRIPT="$SCRIPT_DIR/remote.sh"
 
 # Files to exclude from upload
@@ -29,7 +30,7 @@ echo "Checking connection..."
 "$REMOTE_SCRIPT" exec "import os; print('Connected to:', os.uname().machine)" || exit 1
 
 echo ""
-echo "Uploading files..."
+echo "Uploading source files..."
 
 cd "$SRC_DIR"
 for file in *.py; do
@@ -50,6 +51,20 @@ for file in *.py; do
 
         echo "Uploading $file..."
         "$REMOTE_SCRIPT" fs cp "$file" ":$file"
+    fi
+done
+
+echo ""
+echo "Uploading board configurations..."
+
+# Create /boards directory on device
+"$REMOTE_SCRIPT" fs mkdir :/boards 2>/dev/null || true
+
+cd "$BOARDS_DIR"
+for file in *.json; do
+    if [ -f "$file" ]; then
+        echo "Uploading boards/$file..."
+        "$REMOTE_SCRIPT" fs cp "$file" ":/boards/$file"
     fi
 done
 

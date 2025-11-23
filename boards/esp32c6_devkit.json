@@ -1,0 +1,22 @@
+{
+  "name": "ESP32-C6-DevKit",
+  "chip": "ESP32-C6",
+  "description": "ESP32-C6 Development Kit",
+  "valid_gpio_pins": [
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23
+  ],
+  "reserved_pins": [12, 13, 14, 15, 16, 17],
+  "notes": {
+    "pins_12_17": "SPI flash pins - do not use"
+  },
+  "default_sensor_pins": {
+    "ds18b20": -1,
+    "dht22": -1,
+    "photo_sensor": -1,
+    "light_switch": -1
+  },
+  "i2c": {
+    "scl": -1,
+    "sda": -1
+  }
+}

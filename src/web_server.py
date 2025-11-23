@@ -7,6 +7,8 @@ import gc
 import time
 import sys
 from relays import RelayManager
+from board_config import BoardConfig
+import config
 
 class WebServer:
     def __init__(self, port=80, www_dir='/www'):
@@ -14,6 +16,7 @@ class WebServer:
         self.www_dir = www_dir
         self.start_time = time.ticks_ms()
         self.relays = RelayManager()
+        self.board = BoardConfig(config.BOARD_CONFIG_FILE)
 
         
     async def start(self):
@@ -183,6 +186,22 @@ class WebServer:
             except Exception as e:
                 self._send_error(writer, 400, str(e))
                 await writer.drain()
+
+        # --- GPIO Options ---
+        elif path == '/api/gpio/available' and method == 'GET':
+            try:
+                # Get pins currently in use by relays
+                used_pins = [relay['pin'] for relay in self.relays.get_relays().get('relays', [])]
+                
+                # Get available pins from board config
+                available = self.board.get_available_pins(exclude_pins=used_pins)
+                
+                # Return as object with pin numbers as keys (matches old API format)
+                result = {str(pin): str(pin) for pin in available}
+                self._send_json(writer, result)
+            except Exception as e:
+                self._send_error(writer, 500, str(e))
+            await writer.drain()
 
         # --- Sensors (Dummy) ---
         elif path == '/api/sensors' and method == 'GET':
