@@ -89,12 +89,23 @@ class WebServer:
         print(f"Handling API: {path}")
         if path == '/api/status' and method == 'GET':
             uptime_s = time.ticks_diff(time.ticks_ms(), self.start_time) // 1000
+            uptime_h = uptime_s // 3600
+            uptime_m = (uptime_s % 3600) // 60
+            uptime_s_remaining = uptime_s % 60
+            
+            mem_free = gc.mem_free()
+            mem_alloc = gc.mem_alloc()
+            mem_total = mem_free + mem_alloc
+            
+            # Dynamic status info - backend controls what's displayed
             status = {
-                'platform': 'esp32',
-                'memory_free': gc.mem_free(),
-                'memory_alloc': gc.mem_alloc(),
-                'uptime_seconds': uptime_s,
-                'frequency': machine.freq()
+                'Board': self.board.get_name(),
+                'Chip': self.board.get_chip(),
+                'CPU Frequency': f"{machine.freq() // 1_000_000} MHz",
+                'Uptime': f"{uptime_h}h {uptime_m}m {uptime_s_remaining}s",
+                'Free Memory': f"{mem_free:,} bytes",
+                'Total Memory': f"{mem_total:,} bytes",
+                'Memory Usage': f"{(mem_alloc / mem_total * 100):.1f}%"
             }
             self._send_json(writer, status)
             await writer.drain()
