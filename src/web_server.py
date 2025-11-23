@@ -11,13 +11,14 @@ from system_status import SystemStatus
 from config_manager import config
 
 class WebServer:
-    def __init__(self, port=80, www_dir='/www'):
+    def __init__(self, port=80, www_dir='/www', sensors=None, relays=None):
         self.port = port
         self.www_dir = www_dir
         self.start_time = time.ticks_ms()
         self.board = BoardConfig(config.BOARD_CONFIG_FILE)
-        self.relays = RelayManager()
+        self.relays = relays if relays else RelayManager()
         self.system_status = SystemStatus(self.board, self.start_time)
+        self.sensors = sensors  # Optional sensor manager for /api/sensors
         
     async def start(self):
         print(f"Starting web server on port {self.port}...")
@@ -198,14 +199,19 @@ class WebServer:
 
         # --- Sensors (Dummy) ---
         elif path == '/api/sensors' and method == 'GET':
-            # TODO: Implement real sensors
-            sensors = {
-                "Light": 500,
-                "Switch": False,
-                "Temperature": 25.0,
-                "Humidity": 50.0
-            }
-            self._send_json(writer, sensors)
+            # Return sensor data from SensorManager if available
+            if self.sensors:
+                sensor_data = self.sensors.to_dict()
+            else:
+                # Fallback to dummy data if no sensor manager
+                sensor_data = {
+                    "temperature": 25.0,
+                    "humidity": 50.0,
+                    "light_level": 500,
+                    "switch_state": False,
+                    "time_seconds": 0
+                }
+            self._send_json(writer, sensor_data)
             await writer.drain()
 
         # --- Storage Info ---

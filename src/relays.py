@@ -113,16 +113,23 @@ class RelayManager:
         self._setup_pins()  # Re-configure pins with new values
         return True
 
-    def set_relay_by_label(self, label, state):
-        """Set a relay state by its label (updates value and sets to manual mode)."""
+    def set_relay_by_label(self, label, state, keep_auto=False):
+        """Set a relay state by its label.
+        
+        Args:
+            label: Relay label to find
+            state: New state (True/False)
+            keep_auto: If True, keep current auto mode; if False, set to manual
+        """
         found = False
         for relay in self.relays:
             if relay.get('label') == label:
                 # Update value
                 relay['value'] = state
                 
-                # Set to manual mode (not auto)
-                relay['auto'] = False
+                # Update auto mode (default: set to manual when called from API)
+                if not keep_auto:
+                    relay['auto'] = False
                 
                 # Update physical pin
                 self.set_physical_state(
