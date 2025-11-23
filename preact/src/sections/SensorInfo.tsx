@@ -5,18 +5,21 @@ type SensorInfoResponse = {
   Temperature?: number;
   Humidity?: number;
   Light?: number;
-  Switch?: number;
+  Switch?: number; // Note: Switch is a boolean in backend dummy data but number in old API?
+  // Backend sends: "Switch": False. JSON boolean.
+  // Let's update type to accept boolean or number
 };
 
 /**
  * Sensor info is the current state of the sensors on the device.
  */
 export const SensorInfo = () => {
-  const [sensorInfo, setSensorInfo] = useState<SensorInfoResponse>({});
+  // Use 'any' for now to tolerate slight mismatches or different types
+  const [sensorInfo, setSensorInfo] = useState<any>({});
 
   useEffect(() => {
     const load = async () => {
-      const data = await fetch('/sensor-info');
+      const data = await fetch('/api/sensors');
       const json = await data.json();
       setSensorInfo(json);
     };
@@ -28,7 +31,7 @@ export const SensorInfo = () => {
       <p>Temperature: {sensorInfo.Temperature}F</p>
       <p>Humidity: {sensorInfo.Humidity}%</p>
       <p>Light: {sensorInfo.Light}</p>
-      <p>Switch: {sensorInfo.Switch}</p>
+      <p>Switch: {String(sensorInfo.Switch)}</p>
     </Section>
   );
 };

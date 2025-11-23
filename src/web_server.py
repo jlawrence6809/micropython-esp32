@@ -6,12 +6,15 @@ import machine
 import gc
 import time
 import sys
+from relays import RelayManager
 
 class WebServer:
     def __init__(self, port=80, www_dir='/www'):
         self.port = port
         self.www_dir = www_dir
         self.start_time = time.ticks_ms()
+        self.relays = RelayManager()
+
         
     async def start(self):
         print(f"Starting web server on port {self.port}...")
@@ -90,11 +93,7 @@ class WebServer:
                 'uptime_seconds': uptime_s,
                 'frequency': machine.freq()
             }
-            response = json.dumps(status)
-            writer.write(b'HTTP/1.1 200 OK\r\n')
-            writer.write(b'Content-Type: application/json\r\n')
-            writer.write(b'Connection: close\r\n\r\n')
-            writer.write(response.encode())
+            self._send_json(writer, status)
             await writer.drain()
 
         elif path == '/api/save' and method == 'POST':
@@ -118,16 +117,12 @@ class WebServer:
                 
                 print("File saved successfully")
                     
-                response = json.dumps({'status': 'ok', 'message': f'Saved {filename}'})
-                writer.write(b'HTTP/1.1 200 OK\r\n')
-                writer.write(b'Content-Type: application/json\r\n\r\n')
-                writer.write(response.encode())
+                self._send_json(writer, {'status': 'ok', 'message': f'Saved {filename}'})
                 await writer.drain()
             except Exception as e:
                 print(f"API SAVE ERROR: {e}")
                 sys.print_exception(e)
-                writer.write(b'HTTP/1.1 400 Bad Request\r\n\r\n')
-                writer.write(str(e).encode())
+                self._send_error(writer, 400, str(e))
                 await writer.drain()
 
         elif path == '/api/restart' and method == 'POST':
@@ -142,9 +137,104 @@ class WebServer:
             await asyncio.sleep(0.5)
             machine.reset()
 
+        # --- Relay Config ---
+        elif path == '/api/relays/config' and method == 'GET':
+            config = self.relays.get_relays()
+            # Original API returned { "count": N, "relays": [...] }
+            # Our get_relays returns { "relays": [...] }
+            # Let's match the old shape roughly
+            response_data = {
+                "count": len(config.get('relays', [])),
+                "relays": config.get('relays', [])
+            }
+            self._send_json(writer, response_data)
+            await writer.drain()
+
+        elif path == '/api/relays/config' and method == 'POST':
+            try:
+                data = json.loads(body.decode())
+                new_relays = data.get('relays', [])
+                # If full doc is passed, extract relays
+                # Update config
+                if self.relays.update_config(new_relays):
+                    self._send_json(writer, {"success": True})
+                else:
+                    self._send_error(writer, 400, "Invalid config format")
+                await writer.drain()
+            except Exception as e:
+                self._send_error(writer, 400, str(e))
+                await writer.drain()
+
+        # --- Relay Control ---
+        elif path == '/api/relays/control' and method == 'POST':
+            try:
+                data = json.loads(body.decode())
+                label = data.get('label')
+                state = data.get('state')
+                
+                if label is None or state is None:
+                    self._send_error(writer, 400, "Missing label or state")
+                else:
+                    if self.relays.set_relay_by_label(label, state):
+                        self._send_json(writer, {"status": "success", "message": "Relay updated"})
+                    else:
+                        self._send_json(writer, {"status": "error", "message": "Relay not found"})
+                await writer.drain()
+            except Exception as e:
+                self._send_error(writer, 400, str(e))
+                await writer.drain()
+
+        # --- Sensors (Dummy) ---
+        elif path == '/api/sensors' and method == 'GET':
+            # TODO: Implement real sensors
+            sensors = {
+                "Light": 500,
+                "Switch": False,
+                "Temperature": 25.0,
+                "Humidity": 50.0
+            }
+            self._send_json(writer, sensors)
+            await writer.drain()
+
+        # --- Storage Info ---
+        elif path == '/api/storage' and method == 'GET':
+            try:
+                # statvfs returns (bsize, frsize, blocks, bfree, bavail, files, ffree, favail, flag, namemax)
+                stat = os.statvfs('/')
+                block_size = stat[0]
+                total_blocks = stat[2]
+                free_blocks = stat[3]
+                
+                total_kb = (total_blocks * block_size) // 1024
+                free_kb = (free_blocks * block_size) // 1024
+                used_kb = total_kb - free_kb
+                
+                info = {
+                    "status": "ok",
+                    "spiffs_total_kb": total_kb,
+                    "spiffs_used_kb": used_kb,
+                    "spiffs_free_kb": free_kb,
+                    "fs_type": "LittleFS" # MicroPython standard on ESP32
+                }
+                self._send_json(writer, info)
+            except Exception as e:
+                self._send_error(writer, 500, str(e))
+            await writer.drain()
+
         else:
             writer.write(b'HTTP/1.1 404 Not Found\r\n\r\n')
             await writer.drain()
+
+    def _send_json(self, writer, data):
+        writer.write(b'HTTP/1.1 200 OK\r\n')
+        writer.write(b'Content-Type: application/json\r\n')
+        writer.write(b'Connection: close\r\n\r\n')
+        writer.write(json.dumps(data).encode())
+
+    def _send_error(self, writer, code, message):
+        writer.write(f'HTTP/1.1 {code} Error\r\n'.encode())
+        writer.write(b'Content-Type: application/json\r\n\r\n')
+        writer.write(json.dumps({"error": message}).encode())
 
     async def serve_file(self, writer, path):
         # Default to index.html for root

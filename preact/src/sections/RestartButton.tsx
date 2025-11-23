@@ -13,7 +13,7 @@ export const RestartButton = () => {
       <button
         onClick={async () => {
           try {
-            await fetch('/reset', { method: 'POST' });
+            await fetch('/api/restart', { method: 'POST' });
             setRestartSuccess(true);
             setTimeout(() => {
               setRestartSuccess(false);

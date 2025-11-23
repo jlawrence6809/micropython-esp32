@@ -11,7 +11,7 @@ export const WifiForm = () => {
     const password = (form.querySelector('#password') as HTMLInputElement)
       .value;
     try {
-      await fetch('/wifi-connect', {
+      await fetch('/api/wifi/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ssid, password }),

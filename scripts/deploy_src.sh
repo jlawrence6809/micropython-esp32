@@ -57,4 +57,3 @@ echo ""
 echo "Deployment complete!"
 echo "Resetting board..."
 "$REMOTE_SCRIPT" exec "import machine; machine.reset()"
-
