@@ -18,7 +18,6 @@ class WebServer:
         self.board = BoardConfig(config.BOARD_CONFIG_FILE)
         self.relays = RelayManager()
         self.system_status = SystemStatus(self.board, self.start_time)
-
         
     async def start(self):
         print(f"Starting web server on port {self.port}...")
@@ -136,13 +135,13 @@ class WebServer:
 
         # --- Relay Config ---
         elif path == '/api/relays/config' and method == 'GET':
-            config = self.relays.get_relays()
+            relay_config = self.relays.get_relays()
             # Original API returned { "count": N, "relays": [...] }
             # Our get_relays returns { "relays": [...] }
             # Let's match the old shape roughly
             response_data = {
-                "count": len(config.get('relays', [])),
-                "relays": config.get('relays', [])
+                "count": len(relay_config.get('relays', [])),
+                "relays": relay_config.get('relays', [])
             }
             self._send_json(writer, response_data)
             await writer.drain()
@@ -304,6 +303,101 @@ class WebServer:
                     status["ap_ssid"] = ap.config('essid')
                 
                 self._send_json(writer, status)
+            except Exception as e:
+                self._send_error(writer, 500, str(e))
+            await writer.drain()
+
+        # --- Config Get ---
+        elif path == '/api/config' and method == 'GET':
+            try:
+                # Get current config
+                # Load board config dynamically to get current name
+                current_board = BoardConfig(config.BOARD_CONFIG_FILE)
+                
+                config_data = {
+                    "hostname": config.HOSTNAME,
+                    "board": config.BOARD,
+                    "board_name": current_board.get_name()
+                }
+                self._send_json(writer, config_data)
+            except Exception as e:
+                import sys
+                sys.print_exception(e)
+                self._send_error(writer, 500, str(e))
+            await writer.drain()
+
+        # --- Config Update ---
+        elif path == '/api/config' and method == 'POST':
+            try:
+                data = json.loads(body.decode())
+                hostname = data.get('hostname')
+                board = data.get('board')
+                
+                # Validate inputs
+                if hostname is not None:
+                    # Basic hostname validation
+                    # MicroPython doesn't have isalnum(), so check manually
+                    cleaned = hostname.replace('-', '').replace('_', '')
+                    if not hostname or not all(c.isalpha() or c.isdigit() for c in cleaned):
+                        self._send_error(writer, 400, "Invalid hostname format")
+                        await writer.drain()
+                        return
+                    config.HOSTNAME = hostname
+                
+                if board is not None:
+                    # Validate board filename - check if file exists
+                    # Ensure .json extension
+                    board_filename = board if board.endswith('.json') else f'{board}.json'
+                    board_file = f'/boards/{board_filename}'
+                    try:
+                        with open(board_file, 'r') as f:
+                            json.load(f)  # Validate it's valid JSON
+                        config.BOARD = board_filename
+                    except (OSError, ValueError) as e:
+                        self._send_error(writer, 400, f"Invalid board file: {board_filename} - {e}")
+                        await writer.drain()
+                        return
+                
+                # Save config
+                if config.save():
+                    self._send_json(writer, {
+                        "status": "success",
+                        "message": "Configuration updated. Restart required for changes to take effect.",
+                        "restart_required": True
+                    })
+                else:
+                    self._send_error(writer, 500, "Failed to save configuration")
+            except Exception as e:
+                import sys
+                sys.print_exception(e)
+                self._send_error(writer, 500, str(e))
+            await writer.drain()
+
+        # --- Available Boards ---
+        elif path == '/api/boards' and method == 'GET':
+            try:
+                # List available board config files
+                boards = []
+                try:
+                    files = os.listdir('/boards')
+                    for filename in files:
+                        if filename.endswith('.json'):
+                            filepath = f'/boards/{filename}'
+                            try:
+                                with open(filepath, 'r') as f:
+                                    board_data = json.load(f)
+                                    boards.append({
+                                        "filename": filename,
+                                        "name": board_data.get('name', filename.replace('.json', '')),
+                                        "chip": board_data.get('chip', 'Unknown'),
+                                        "description": board_data.get('description', '')
+                                    })
+                            except:
+                                pass  # Skip invalid files
+                except OSError:
+                    pass  # /boards directory doesn't exist
+                
+                self._send_json(writer, {"boards": boards})
             except Exception as e:
                 self._send_error(writer, 500, str(e))
             await writer.drain()

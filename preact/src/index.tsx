@@ -6,6 +6,7 @@ import { GlobalInfo } from './sections/GlobalInfo';
 import { SensorInfo } from './sections/SensorInfo';
 import { WifiForm } from './sections/WifiForm';
 import { RestartButton } from './sections/RestartButton';
+import { Settings } from './sections/Settings';
 
 export default function App() {
   const name = getName();
@@ -25,6 +26,8 @@ export default function App() {
         <GlobalInfo />
         <hr />
         <SensorInfo />
+        <hr />
+        <Settings />
         <hr />
         <WifiForm />
         <hr />

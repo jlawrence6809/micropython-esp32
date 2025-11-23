@@ -6,7 +6,10 @@ import { Section } from '../components/Section';
  * The backend sends a dynamic key-value object that we render as-is.
  */
 export const GlobalInfo = () => {
-  const [globalInfo, setGlobalInfo] = useState<Record<string, string | number> | null>(null);
+  const [globalInfo, setGlobalInfo] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -20,9 +23,9 @@ export const GlobalInfo = () => {
       }
     };
     load();
-    
-    // Refresh every 5 seconds
-    const interval = setInterval(load, 5000);
+
+    // Refresh every 60 seconds
+    const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
   }, []);
 

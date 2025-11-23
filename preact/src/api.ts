@@ -57,3 +57,24 @@ export const validateRule = async (
   // return await response.json();
   return { success: true };
 };
+
+// Config API
+export const fetchConfig = async () => {
+  const response = await fetch('/api/config');
+  return await response.json();
+};
+
+export const fetchAvailableBoards = async () => {
+  const response = await fetch('/api/boards');
+  const json = await response.json();
+  return json.boards;
+};
+
+export const postConfig = async (config: { hostname?: string; board?: string }) => {
+  const response = await fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config),
+  });
+  return await response.json();
+};

@@ -26,14 +26,15 @@ class Config:
                 "password": None
             },
             "hostname": "esp32",
-            "board_config": "/boards/unconfigured.json"
+            "board": "unconfigured.json"
         }
     
     def save(self):
         """Save configuration to JSON file."""
         try:
             with open(self.CONFIG_FILE, 'w') as f:
-                json.dump(self.data, f, indent=2)
+                # MicroPython's json.dump doesn't support indent parameter
+                json.dump(self.data, f)
             print(f"Configuration saved to {self.CONFIG_FILE}")
             return True
         except OSError as e:
@@ -70,14 +71,42 @@ class Config:
     def HOSTNAME(self, value):
         self.data['hostname'] = value
     
-    # Board config property
+    # Board property (filename-based)
+    @property
+    def BOARD(self):
+        """Get board filename (e.g., 'esp32s3_devkitc_1_n16r8v.json')"""
+        # Support legacy 'board_config' for migration
+        if 'board' not in self.data and 'board_config' in self.data:
+            # Convert old path format to filename
+            old_path = self.data['board_config']
+            if old_path:
+                # Extract filename from path
+                board_filename = old_path.split('/')[-1]
+                self.data['board'] = board_filename
+                del self.data['board_config']
+                self.save()
+        
+        board = self.data.get('board', 'unconfigured.json')
+        # Ensure it has .json extension
+        if not board.endswith('.json'):
+            board = f'{board}.json'
+        return board
+    
+    @BOARD.setter
+    def BOARD(self, value):
+        """Set board filename"""
+        # Ensure it has .json extension
+        if not value.endswith('.json'):
+            value = f'{value}.json'
+        self.data['board'] = value
+        # Remove old board_config if it exists
+        if 'board_config' in self.data:
+            del self.data['board_config']
+    
     @property
     def BOARD_CONFIG_FILE(self):
-        return self.data.get('board_config', '/boards/unconfigured.json')
-    
-    @BOARD_CONFIG_FILE.setter
-    def BOARD_CONFIG_FILE(self, value):
-        self.data['board_config'] = value
+        """Get full board config file path"""
+        return f'/boards/{self.BOARD}'
     
     def update_wifi(self, ssid, password):
         """Update WiFi credentials and save."""

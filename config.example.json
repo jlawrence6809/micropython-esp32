@@ -4,6 +4,6 @@
     "password": "YOUR_WIFI_PASSWORD"
   },
   "hostname": "esp32",
-  "board_config": "/boards/unconfigured.json",
-  "_comment": "Set board_config to your actual board: esp32s3_devkitc_1_n16r8v.json, esp32c6_devkit.json, or nodemcu_32s.json"
+  "board": "unconfigured.json",
+  "_comment": "Set board to your actual board file: esp32s3_devkitc_1_n16r8v.json, esp32c6_devkit.json, or nodemcu_32s.json"
 }

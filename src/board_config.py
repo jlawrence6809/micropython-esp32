@@ -26,8 +26,8 @@ class BoardConfig:
             }
     
     def get_name(self):
-        """Get board name."""
-        return self.config.get('name', 'Unknown')
+        """Get human-readable board name."""
+        return self.config.get('name', 'Unknown Board')
     
     def get_chip(self):
         """Get chip type."""

@@ -28,7 +28,7 @@ class SystemStatus:
         
         # Warn if board is unconfigured
         if board_name == "Unconfigured Board":
-            status['⚠️ WARNING'] = "Board not configured! Set board_config in config.json"
+            status['⚠️ WARNING'] = "Board not configured! Set board in config.json"
         status['MicroPython'] = self._get_micropython_version()
         
         # Network info
