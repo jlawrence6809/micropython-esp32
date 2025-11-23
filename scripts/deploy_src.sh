@@ -15,6 +15,7 @@ REMOTE_SCRIPT="$SCRIPT_DIR/remote.sh"
 # Files to exclude from upload
 EXCLUDE_FILES=(
     "config.example.py"
+    "config.py"  # Old Python config (now using config.json)
 )
 
 echo "=== Deploying Source Code ==="

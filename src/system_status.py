@@ -5,7 +5,7 @@ import machine
 import network
 import esp32
 import sys
-import config
+from config_manager import config
 
 class SystemStatus:
     """Collects and formats system status information."""

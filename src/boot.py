@@ -1,74 +1,68 @@
 # boot.py - Runs on every boot
-# This file connects to WiFi automatically when the board starts
+# This file connects to WiFi with AP fallback and sets up mDNS
 
 import network
 import time
+from wifi_manager import WiFiManager
+from config_manager import config
 
-# Import WiFi credentials from config.py
-try:
-    from config import WIFI_SSID, WIFI_PASSWORD
+def setup_mdns(hostname):
+    """Setup mDNS responder for hostname.local access."""
     try:
-        from config import HOSTNAME
+        import mdns
+        mdns_server = mdns.Server()
+        mdns_server.start(hostname, "MicroPython ESP32 Automation")
+        print(f"mDNS started: {hostname}.local")
+        return mdns_server
     except ImportError:
-        HOSTNAME = None
-except ImportError:
-    print('Warning: config.py not found. WiFi disabled.')
-    print('Create config.py with WIFI_SSID and WIFI_PASSWORD')
-    WIFI_SSID = None
-    WIFI_PASSWORD = None
-    HOSTNAME = None
-
-def connect_wifi():
-    """Connect to WiFi network"""
-    if not WIFI_SSID or not WIFI_PASSWORD:
-        print('WiFi credentials not configured')
-        return
-    
-    wlan = network.WLAN(network.STA_IF)
-    
-    # Set hostname before activating (must be done before active(True))
-    if HOSTNAME:
-        try:
-            network.hostname(HOSTNAME)
-            print(f'Hostname set to: {HOSTNAME}.local')
-        except Exception as e:
-            print(f'Failed to set hostname: {e}')
-    
-    wlan.active(True)
-    
-    if wlan.isconnected():
-        print('Already connected to WiFi')
-        print('Network config:', wlan.ifconfig())
-        return
-    
-    print(f'Connecting to WiFi: {WIFI_SSID}...')
-    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-    
-    # Wait for connection (max 10 seconds)
-    max_wait = 10
-    while max_wait > 0:
-        if wlan.isconnected():
-            break
-        max_wait -= 1
-        print('Waiting for connection...')
-        time.sleep(1)
-    
-    if wlan.isconnected():
-        print('Connected to WiFi!')
-        print('Network config:', wlan.ifconfig())
-        print('IP address:', wlan.ifconfig()[0])
-    else:
-        print('Failed to connect to WiFi')
-
-# Auto-connect to WiFi on boot
-connect_wifi()
-
-# Start WebREPL if WiFi is connected
-if WIFI_SSID and WIFI_PASSWORD:
-    try:
-        import webrepl
-        webrepl.start()
-        print('WebREPL started')
+        print("mDNS not available (requires esp32 port with mdns module)")
+        return None
     except Exception as e:
-        print(f'WebREPL failed to start: {e}')
+        print(f"Failed to start mDNS: {e}")
+        return None
 
+def setup_wifi():
+    """Setup WiFi with AP fallback."""
+    hostname = config.HOSTNAME if config.HOSTNAME else "esp32"
+    
+    # Check if WiFi credentials are configured
+    if not config.WIFI_SSID or not config.WIFI_PASSWORD:
+        print('WiFi credentials not configured, starting AP mode...')
+        wifi = WiFiManager()
+        wifi.start_ap_mode()
+        print(f"Connect to '{hostname}-setup' network to configure WiFi")
+        return wifi, None
+    
+    # Set hostname before connecting
+    try:
+        network.hostname(hostname)
+        print(f'Hostname set to: {hostname}')
+    except Exception as e:
+        print(f'Failed to set hostname: {e}')
+    
+    # Try to connect with AP fallback
+    wifi = WiFiManager()
+    mode = wifi.connect_with_fallback()
+    
+    mdns_server = None
+    if mode == 'sta':
+        print('WiFi connected successfully!')
+        
+        # Start mDNS for hostname.local access
+        mdns_server = setup_mdns(hostname)
+        
+        # Start WebREPL if in station mode
+        try:
+            import webrepl
+            webrepl.start()
+            print('WebREPL started')
+        except Exception as e:
+            print(f'WebREPL failed to start: {e}')
+    else:
+        print(f'Running in AP mode - connect to "{hostname}-setup" to configure WiFi')
+        print(f'AP IP: {wifi.get_ip()}')
+    
+    return wifi, mdns_server
+
+# Setup WiFi on boot
+wifi_manager, mdns_server = setup_wifi()

@@ -1,0 +1,8 @@
+{
+  "wifi": {
+    "ssid": "YOUR_WIFI_SSID",
+    "password": "YOUR_WIFI_PASSWORD"
+  },
+  "hostname": "esp32",
+  "board_config": "/boards/esp32s3_devkitc_1_n16r8v.json"
+}

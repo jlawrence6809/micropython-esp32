@@ -8,7 +8,7 @@ import sys
 from relays import RelayManager
 from board_config import BoardConfig
 from system_status import SystemStatus
-import config
+from config_manager import config
 
 class WebServer:
     def __init__(self, port=80, www_dir='/www'):
@@ -230,6 +230,80 @@ class WebServer:
                     "fs_type": "LittleFS" # MicroPython standard on ESP32
                 }
                 self._send_json(writer, info)
+            except Exception as e:
+                self._send_error(writer, 500, str(e))
+            await writer.drain()
+
+        # --- WiFi Scan ---
+        elif path == '/api/wifi/scan' and method == 'GET':
+            try:
+                from wifi_manager import WiFiManager
+                wifi = WiFiManager()
+                networks = wifi.scan_networks()
+                self._send_json(writer, {"networks": networks})
+            except Exception as e:
+                self._send_error(writer, 500, str(e))
+            await writer.drain()
+
+        # --- WiFi Connect ---
+        elif path == '/api/wifi/connect' and method == 'POST':
+            try:
+                data = json.loads(body.decode())
+                ssid = data.get('ssid')
+                password = data.get('password')
+                save = data.get('save', True)  # Save by default
+                
+                if not ssid:
+                    self._send_error(writer, 400, "SSID required")
+                    await writer.drain()
+                    return
+                
+                from wifi_manager import WiFiManager
+                wifi = WiFiManager()
+                
+                # Try to connect
+                if wifi.connect(ssid, password, timeout=15):
+                    # Save credentials if requested
+                    if save:
+                        wifi.save_credentials(ssid, password)
+                    
+                    self._send_json(writer, {
+                        "status": "success",
+                        "message": "Connected to WiFi",
+                        "ip": wifi.get_ip()
+                    })
+                else:
+                    self._send_json(writer, {
+                        "status": "error",
+                        "message": "Failed to connect to WiFi"
+                    })
+            except Exception as e:
+                self._send_error(writer, 500, str(e))
+            await writer.drain()
+
+        # --- WiFi Status ---
+        elif path == '/api/wifi/status' and method == 'GET':
+            try:
+                import network
+                wlan = network.WLAN(network.STA_IF)
+                ap = network.WLAN(network.AP_IF)
+                
+                status = {
+                    "sta_active": wlan.active(),
+                    "sta_connected": wlan.isconnected(),
+                    "ap_active": ap.active()
+                }
+                
+                if wlan.isconnected():
+                    status["sta_ip"] = wlan.ifconfig()[0]
+                    status["sta_ssid"] = wlan.config('essid')
+                    status["sta_rssi"] = wlan.status('rssi')
+                
+                if ap.active():
+                    status["ap_ip"] = ap.ifconfig()[0]
+                    status["ap_ssid"] = ap.config('essid')
+                
+                self._send_json(writer, status)
             except Exception as e:
                 self._send_error(writer, 500, str(e))
             await writer.drain()
