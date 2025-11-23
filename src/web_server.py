@@ -3,11 +3,11 @@ import os
 import uasyncio as asyncio
 import json
 import machine
-import gc
 import time
 import sys
 from relays import RelayManager
 from board_config import BoardConfig
+from system_status import SystemStatus
 import config
 
 class WebServer:
@@ -15,8 +15,9 @@ class WebServer:
         self.port = port
         self.www_dir = www_dir
         self.start_time = time.ticks_ms()
-        self.relays = RelayManager()
         self.board = BoardConfig(config.BOARD_CONFIG_FILE)
+        self.relays = RelayManager()
+        self.system_status = SystemStatus(self.board, self.start_time)
 
         
     async def start(self):
@@ -88,25 +89,7 @@ class WebServer:
     async def handle_api(self, writer, method, path, body):
         print(f"Handling API: {path}")
         if path == '/api/status' and method == 'GET':
-            uptime_s = time.ticks_diff(time.ticks_ms(), self.start_time) // 1000
-            uptime_h = uptime_s // 3600
-            uptime_m = (uptime_s % 3600) // 60
-            uptime_s_remaining = uptime_s % 60
-            
-            mem_free = gc.mem_free()
-            mem_alloc = gc.mem_alloc()
-            mem_total = mem_free + mem_alloc
-            
-            # Dynamic status info - backend controls what's displayed
-            status = {
-                'Board': self.board.get_name(),
-                'Chip': self.board.get_chip(),
-                'CPU Frequency': f"{machine.freq() // 1_000_000} MHz",
-                'Uptime': f"{uptime_h}h {uptime_m}m {uptime_s_remaining}s",
-                'Free Memory': f"{mem_free:,} bytes",
-                'Total Memory': f"{mem_total:,} bytes",
-                'Memory Usage': f"{(mem_alloc / mem_total * 100):.1f}%"
-            }
+            status = self.system_status.get_status()
             self._send_json(writer, status)
             await writer.drain()
 
