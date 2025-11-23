@@ -69,31 +69,28 @@ h1 {
   background-color: #ccc;
 }
 
-.ToggleSwitch.force_0 {
+/* Manual mode (forced on/off) */
+.ToggleSwitch.manual.off {
   background-color: red;
   border-color: red;
 }
 
-.ToggleSwitch.force_1 {
+.ToggleSwitch.manual.on {
   background-color: green;
   border-color: green;
 }
 
-.ToggleSwitch.force_2 {
+/* Auto mode (rule-driven) - blue border to indicate auto */
+.ToggleSwitch.auto {
   border-color: blue;
 }
 
-.ToggleSwitch.force_2.auto_0 {
+.ToggleSwitch.auto.off {
   background-color: red;
 }
 
-.ToggleSwitch.force_2.auto_1 {
+.ToggleSwitch.auto.on {
   background-color: green;
-}
-
-/* Two don't cares is an off state */
-.ToggleSwitch.force_2.auto_2 {
-  background-color: red;
 }
 
 .AutomateButton {

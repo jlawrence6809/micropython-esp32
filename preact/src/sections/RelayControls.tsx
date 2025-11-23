@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Section } from '../components/Section';
 import { AutomateDialog } from '../components/AutomateDialog';
-import { Relay, RelayStateValue, RelayForceState, RelayConfig } from '../types';
+import { Relay, RelayConfig } from '../types';
 import { fetchGpioOptions, fetchRelayConfig, postRelayConfig } from '../api';
 
 /**
@@ -9,24 +9,26 @@ import { fetchGpioOptions, fetchRelayConfig, postRelayConfig } from '../api';
  */
 let RELAY_COUNT = 0;
 
-const parseRelayStateValue = (value: number): RelayStateValue => {
-  const force = value % 10;
-  const auto = Math.floor(value / 10);
-  return { force, auto } as RelayStateValue;
-};
-
-const getRelayStateValue = (current: RelayStateValue): number =>
-  current.auto * 10 + current.force;
-
 /**
- * This is the order:
- * force off -> force on -> force x -> force off -> etc...
- * So do not modify the tens digit, just the ones digit (force digit).
+ * Cycle through relay states:
+ * Manual Off (value=false, auto=false) ->
+ * Manual On (value=true, auto=false) ->
+ * Auto (value=<rule result>, auto=true) ->
+ * Manual Off ...
  */
-const getNextRelayStateValue = (current: number): number => {
-  const { force, auto } = parseRelayStateValue(current);
-  const nextForce = ((force + 1) % 3) as RelayForceState;
-  return getRelayStateValue({ force: nextForce, auto });
+const getNextRelayState = (
+  current: Pick<RelayConfig, 'value' | 'auto'>,
+): Pick<RelayConfig, 'value' | 'auto'> => {
+  if (!current.auto && !current.value) {
+    // Manual Off -> Manual On
+    return { value: true, auto: false };
+  } else if (!current.auto && current.value) {
+    // Manual On -> Auto
+    return { value: current.value, auto: true }; // Keep current value when switching to auto
+  } else {
+    // Auto -> Manual Off
+    return { value: false, auto: false };
+  }
 };
 
 export const RelayControls = () => {
@@ -69,10 +71,12 @@ export const RelayControls = () => {
 
     if (!response.ok) {
       alert(`Failed to update relay config: ${response.statusText}`);
+      return;
     }
 
     // Refresh the config after update
-    await fetchRelayConfig();
+    const json = await fetchRelayConfig();
+    setRelayConfigs(json.relays);
   };
 
   // Helper function to update a single relay property
@@ -86,7 +90,8 @@ export const RelayControls = () => {
         | 'rule'
         | 'defaultValue'
         | 'isInverted'
-        | 'currentValue'
+        | 'value'
+        | 'auto'
       >
     >,
   ) => {
@@ -97,8 +102,6 @@ export const RelayControls = () => {
     );
 
     await updateEntireConfig(updatedConfigs);
-
-    await fetchRelayConfig();
   };
 
   const addRelay = async () => {
@@ -114,8 +117,9 @@ export const RelayControls = () => {
         pin: -1,
         isInverted: false,
         label,
-        currentValue: 0, // Will be set to defaultValue by backend
-        defaultValue: 0,
+        value: false, // Start off
+        auto: false, // Start in manual mode
+        defaultValue: false,
         rule: '["NOP"]',
         ...newRelay,
       };
@@ -144,14 +148,13 @@ export const RelayControls = () => {
           )}
           {relayConfigs.map((config) => {
             const relay: Relay = config.label as Relay;
-            const value = config.currentValue;
-            const state = parseRelayStateValue(value);
             const label = config.label;
             const isLoading = updating || adding;
 
-            let stateClasses = 'loading';
+            const isAuto = config.auto;
+            const isOn = config.value;
 
-            stateClasses = `auto_${state.auto} force_${state.force}`;
+            const stateClasses = `${isAuto ? 'auto' : 'manual'} ${isOn ? 'on' : 'off'}`;
 
             return (
               <div
@@ -159,9 +162,7 @@ export const RelayControls = () => {
                 className={`ToggleSwitch ${stateClasses}`}
                 onClick={() =>
                   !isLoading &&
-                  updateRelayProperty(label, {
-                    currentValue: getNextRelayStateValue(value),
-                  })
+                  updateRelayProperty(label, getNextRelayState(config))
                 }
               >
                 <div

@@ -16,25 +16,37 @@ class RelayManager:
             with open(CONFIG_FILE, 'r') as f:
                 data = json.load(f)
                 self.relays = data.get('relays', [])
-                # Copy defaultValue to currentValue for all relays, if present
+                
+                # Initialize runtime state for each relay
                 for relay in self.relays:
-                    if 'defaultValue' in relay:
-                        relay['currentValue'] = relay['defaultValue']
+                    # Initialize value from defaultValue if not present
+                    if 'value' not in relay:
+                        relay['value'] = relay.get('defaultValue', False)
+                    
+                    # Initialize auto mode (default to manual/forced)
+                    if 'auto' not in relay:
+                        relay['auto'] = False
+                            
         except (OSError, ValueError):
             print("No relay config found, using default empty config.")
             self.relays = []
-            # Nothing to inherit currentValue in this case
             
         self._setup_pins()
 
     def save_config(self):
-        """Save current configuration to JSON file."""
-        # Remove 'currentValue' from each relay for saving only (not mutating self.relays)
+        """Save current configuration to JSON file (without runtime state)."""
+        # Remove runtime-only fields (value, auto) before saving
         relays_for_save = []
         for relay in self.relays:
-            relay_copy = relay.copy()
-            relay_copy.pop('currentValue', None)
+            relay_copy = {
+                'pin': relay['pin'],
+                'label': relay['label'],
+                'isInverted': relay.get('isInverted', False),
+                'defaultValue': relay.get('defaultValue', False),
+                'rule': relay.get('rule', '["NOP"]')
+            }
             relays_for_save.append(relay_copy)
+            
         data = {'relays': relays_for_save}
         try:
             with open(CONFIG_FILE, 'w') as f:
@@ -46,24 +58,18 @@ class RelayManager:
 
     def _setup_pins(self):
         """Initialize GPIO pins based on configuration."""
-        # Identify pins no longer in use to release them? 
-        # MicroPython doesn't easily let you "deinit" a pin to free it completely,
-        # but re-initializing it is usually fine.
-        
         for relay in self.relays:
             pin_num = relay.get('pin')
-            if pin_num is not None:
+            if pin_num is not None and pin_num >= 0:
                 try:
                     # Configure pin as output
                     pin = machine.Pin(pin_num, machine.Pin.OUT)
                     self.pins[pin_num] = pin
                     
-                    # Set initial state (respecting default value and inversion)
-                    current_val = relay.get('currentValue', 0)
-                    self.set_physical_state(pin_num, current_val, relay.get('isInverted', False))
+                    # Set physical state based on current value
+                    value = relay.get('value', False)
+                    self.set_physical_state(pin_num, value, relay.get('isInverted', False))
                     
-                    # Update current value in memory to match
-                    relay['currentValue'] = current_val
                 except ValueError as e:
                     print(f"Invalid PIN {pin_num}: {e}")
 
@@ -73,10 +79,9 @@ class RelayManager:
             return
         
         pin = self.pins[pin_num]
-        # If inverted: value 1 means GPIO LOW (0), value 0 means GPIO HIGH (1)
-        # If normal:   value 1 means GPIO HIGH (1), value 0 means GPIO LOW (0)
+        # If inverted: value True means GPIO LOW (0), value False means GPIO HIGH (1)
+        # If normal:   value True means GPIO HIGH (1), value False means GPIO LOW (0)
         
-        physical_value = 0
         if is_inverted:
             physical_value = 0 if value else 1
         else:
@@ -90,40 +95,47 @@ class RelayManager:
 
     def update_config(self, new_relays):
         """Update the entire relay configuration."""
-        # Validate structure roughly
         if not isinstance(new_relays, list):
             return False
 
-        # update the relays
+        # Update relays, preserving runtime state where appropriate
         self.relays = new_relays
+        
+        # Ensure all relays have required runtime fields
+        for relay in self.relays:
+            if 'value' not in relay:
+                relay['value'] = False
+            if 'auto' not in relay:
+                relay['auto'] = False
+                
         self.save_config()
-        self._setup_pins()  # Re-configure pins
+        self._setup_pins()  # Re-configure pins with new values
         return True
 
     def set_relay_by_label(self, label, state):
-        """Set a relay state by its label."""
+        """Set a relay state by its label (updates value and sets to manual mode)."""
         found = False
         for relay in self.relays:
             if relay.get('label') == label:
-                relay['currentValue'] = 1 if state else 0
+                # Update value
+                relay['value'] = state
+                
+                # Set to manual mode (not auto)
+                relay['auto'] = False
+                
+                # Update physical pin
                 self.set_physical_state(
                     relay['pin'], 
-                    relay['currentValue'], 
+                    relay['value'], 
                     relay.get('isInverted', False)
                 )
                 found = True
-                # Don't break, in case multiple relays share a label? 
-                # (Original C code assumes unique labels or first match, let's do all matches for safety)
         
-        # If we changed state, should we save it? 
-        # Original code: 'runtime_relays[i].current_value' is updated but not necessarily persisted to flash instantly 
-        # unless 'save_configs' is called. 
-        # For now, we'll keep it in memory to avoid wearing out flash on frequent toggles.
         return found
 
     def get_relay_by_label(self, label):
+        """Get a relay configuration by its label."""
         for relay in self.relays:
             if relay.get('label') == label:
                 return relay
         return None
-
