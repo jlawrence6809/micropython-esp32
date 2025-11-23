@@ -16,15 +16,26 @@ class RelayManager:
             with open(CONFIG_FILE, 'r') as f:
                 data = json.load(f)
                 self.relays = data.get('relays', [])
+                # Copy defaultValue to currentValue for all relays, if present
+                for relay in self.relays:
+                    if 'defaultValue' in relay:
+                        relay['currentValue'] = relay['defaultValue']
         except (OSError, ValueError):
             print("No relay config found, using default empty config.")
             self.relays = []
+            # Nothing to inherit currentValue in this case
             
         self._setup_pins()
 
     def save_config(self):
         """Save current configuration to JSON file."""
-        data = {'relays': self.relays}
+        # Remove 'currentValue' from each relay for saving only (not mutating self.relays)
+        relays_for_save = []
+        for relay in self.relays:
+            relay_copy = relay.copy()
+            relay_copy.pop('currentValue', None)
+            relays_for_save.append(relay_copy)
+        data = {'relays': relays_for_save}
         try:
             with open(CONFIG_FILE, 'w') as f:
                 json.dump(data, f)
@@ -48,11 +59,11 @@ class RelayManager:
                     self.pins[pin_num] = pin
                     
                     # Set initial state (respecting default value and inversion)
-                    default_val = relay.get('defaultValue', 0)
-                    self.set_physical_state(pin_num, default_val, relay.get('isInverted', False))
+                    current_val = relay.get('currentValue', 0)
+                    self.set_physical_state(pin_num, current_val, relay.get('isInverted', False))
                     
                     # Update current value in memory to match
-                    relay['currentValue'] = default_val
+                    relay['currentValue'] = current_val
                 except ValueError as e:
                     print(f"Invalid PIN {pin_num}: {e}")
 
@@ -82,7 +93,8 @@ class RelayManager:
         # Validate structure roughly
         if not isinstance(new_relays, list):
             return False
-            
+
+        # update the relays
         self.relays = new_relays
         self.save_config()
         self._setup_pins()  # Re-configure pins
