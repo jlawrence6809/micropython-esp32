@@ -66,7 +66,9 @@ export const AddRelayDialog = ({
         <h3>Add New Relay</h3>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <label
+            style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+          >
             <strong>GPIO Pin *</strong>
             <select
               value={pin === null ? '' : pin}
@@ -88,7 +90,9 @@ export const AddRelayDialog = ({
             </select>
           </label>
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <label
+            style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+          >
             <strong>Label (optional)</strong>
             <input
               type="text"
@@ -122,7 +126,14 @@ export const AddRelayDialog = ({
 
           <div>
             <strong>Default State on Boot:</strong>
-            <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div
+              style={{
+                marginTop: '0.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem',
+              }}
+            >
               <label
                 style={{
                   display: 'flex',
@@ -170,4 +181,3 @@ export const AddRelayDialog = ({
     </FullScreenDialog>
   );
 };
-

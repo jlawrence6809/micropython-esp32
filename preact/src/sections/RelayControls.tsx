@@ -40,7 +40,7 @@ export const RelayControls = () => {
   const [gpioOptions, setGpioOptions] = useState<number[] | 'loading'>(
     'loading',
   );
-  const [updating, setUpdating] = useState<boolean>(false);
+  const [updatingRelay, setUpdatingRelay] = useState<string | null>(null);
 
   const [automateDialogRelay, setAutomateDialogRelay] = useState<Relay | null>(
     null,
@@ -65,9 +65,7 @@ export const RelayControls = () => {
 
   // Function to update the entire relay configuration
   const updateEntireConfig = async (updatedConfigs: RelayConfig[]) => {
-    setUpdating(true);
     const response = await postRelayConfig(updatedConfigs);
-    setUpdating(false);
 
     if (!response.ok) {
       alert(`Failed to update relay config: ${response.statusText}`);
@@ -98,11 +96,17 @@ export const RelayControls = () => {
   ) => {
     if (relayConfigs === 'loading') return;
 
+    // Set this specific relay as updating
+    setUpdatingRelay(label);
+
     const updatedConfigs = relayConfigs.map((config) =>
       config.label === label ? { ...config, ...updates } : config,
     );
 
     await updateEntireConfig(updatedConfigs);
+
+    // Clear the updating state
+    setUpdatingRelay(null);
   };
 
   const addRelay = async (newRelay: Omit<RelayConfig, 'value' | 'auto'>) => {
@@ -135,12 +139,12 @@ export const RelayControls = () => {
           {relayConfigs.map((config) => {
             const relay: Relay = config.label as Relay;
             const label = config.label;
-            const isLoading = updating;
+            const isLoading = updatingRelay === label;
 
             const isAuto = config.auto;
             const isOn = config.value;
 
-            const stateClasses = `${isAuto ? 'auto' : 'manual'} ${isOn ? 'on' : 'off'}`;
+            const stateClasses = `${isAuto ? 'auto' : 'manual'} ${isOn ? 'on' : 'off'} ${isLoading ? 'loading' : ''}`;
 
             return (
               <div
@@ -160,7 +164,11 @@ export const RelayControls = () => {
                 >
                   ⛭
                 </div>
-                {label}
+                {isLoading ? (
+                  <span style={{ opacity: 0.7 }}>⏳ {label}</span>
+                ) : (
+                  label
+                )}
               </div>
             );
           })}
