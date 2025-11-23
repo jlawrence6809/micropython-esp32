@@ -3,12 +3,10 @@
 
 import uasyncio as asyncio
 from web_server import WebServer
-from sensors import SensorManager
-from rule_engine import RuleEngine
-from relays import RelayManager
+from instances import instances
 import sys
 
-async def automation_loop(sensors, rule_engine, relays):
+async def automation_loop():
     """Main automation loop - evaluates rules and updates relay states.
     
     Runs every 1 second:
@@ -21,10 +19,10 @@ async def automation_loop(sensors, rule_engine, relays):
     while True:
         try:
             # Update all sensors (throttled internally)
-            sensors.update_all()
+            instances.sensors.update_all()
             
             # Get current relay configurations
-            relay_config = relays.get_relays()
+            relay_config = instances.relays.get_relays()
             relay_list = relay_config.get('relays', [])
             
             # Evaluate rules for each relay in auto mode
@@ -42,7 +40,7 @@ async def automation_loop(sensors, rule_engine, relays):
                 
                 try:
                     # Evaluate the rule
-                    result = rule_engine.evaluate_safe(rule, default=relay.get('value', False))
+                    result = instances.rules.evaluate_safe(rule, default=relay.get('value', False))
 
                     print("--------------------------------")
                     print(f"Relay: {relay}")
@@ -53,8 +51,8 @@ async def automation_loop(sensors, rule_engine, relays):
                     if result != relay.get('value'):
                         print(f"Rule for '{label}': {rule} -> {result}")
                         # Set relay state, keeping auto mode enabled
-                        relays.set_relay_by_label(label, result, keep_auto=True)
-                    print(f"New relay state: {relays.get_relay_by_label(label)}")
+                        instances.relays.set_relay_by_label(label, result, keep_auto=True)
+                    print(f"New relay state: {instances.relays.get_relay_by_label(label)}")
                     
                 except Exception as e:
                     print(f"Error evaluating rule for '{label}': {e}")
@@ -71,17 +69,19 @@ async def automation_loop(sensors, rule_engine, relays):
 async def main():
     print("Starting main.py...")
     
-    # Initialize subsystems
-    sensors = SensorManager()
-    rule_engine = RuleEngine(sensors)
-    relays = RelayManager()
-    
-    # Start Web Server (pass sensors and relays to share instances)
-    server = WebServer(sensors=sensors, relays=relays)
-    asyncio.create_task(server.start())
+    # Use global singletons from instance manager
+    # Start Web Server (pass all singletons)
+    instances.server = WebServer(
+        config_manager=instances.config,
+        board_config=instances.board,
+        wifi_manager=instances.wifi,
+        sensor_manager=instances.sensors,
+        relay_manager=instances.relays
+    )
+    asyncio.create_task(instances.server.start())
     
     # Start Automation Loop
-    asyncio.create_task(automation_loop(sensors, rule_engine, relays))
+    asyncio.create_task(automation_loop())
     
     print("System started!")
     

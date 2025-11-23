@@ -5,20 +5,35 @@ import json
 import machine
 import time
 import sys
-from relays import RelayManager
-from board_config import BoardConfig
 from system_status import SystemStatus
-from config_manager import config
 
 class WebServer:
-    def __init__(self, port=80, www_dir='/www', sensors=None, relays=None):
+    def __init__(self, port=80, www_dir='/www', config_manager=None, board_config=None, 
+                 wifi_manager=None, sensor_manager=None, relay_manager=None):
+        """Initialize web server with singleton instances.
+        
+        Args:
+            port: HTTP server port (default 80)
+            www_dir: Directory containing static web files
+            config_manager: ConfigManager singleton instance
+            board_config: BoardConfig singleton instance
+            wifi_manager: WiFiManager singleton instance
+            sensor_manager: SensorManager singleton instance
+            relay_manager: RelayManager singleton instance
+        """
         self.port = port
         self.www_dir = www_dir
         self.start_time = time.ticks_ms()
-        self.board = BoardConfig(config.BOARD_CONFIG_FILE)
-        self.relays = relays if relays else RelayManager()
-        self.system_status = SystemStatus(self.board, self.start_time)
-        self.sensors = sensors  # Optional sensor manager for /api/sensors
+        
+        # Store singleton references
+        self.config = config_manager
+        self.board = board_config
+        self.wifi = wifi_manager
+        self.sensors = sensor_manager
+        self.relays = relay_manager
+        
+        # Initialize system status with singletons
+        self.system_status = SystemStatus(self.board, self.start_time, self.config)
         
     async def start(self):
         print(f"Starting web server on port {self.port}...")
@@ -242,9 +257,7 @@ class WebServer:
         # --- WiFi Scan ---
         elif path == '/api/wifi/scan' and method == 'GET':
             try:
-                from wifi_manager import WiFiManager
-                wifi = WiFiManager()
-                networks = wifi.scan_networks()
+                networks = self.wifi.scan_networks()
                 self._send_json(writer, {"networks": networks})
             except Exception as e:
                 self._send_error(writer, 500, str(e))
@@ -263,19 +276,16 @@ class WebServer:
                     await writer.drain()
                     return
                 
-                from wifi_manager import WiFiManager
-                wifi = WiFiManager()
-                
                 # Try to connect
-                if wifi.connect(ssid, password, timeout=15):
+                if self.wifi.connect(ssid, password, timeout=15):
                     # Save credentials if requested
                     if save:
-                        wifi.save_credentials(ssid, password)
+                        self.wifi.save_credentials(ssid, password)
                     
                     self._send_json(writer, {
                         "status": "success",
                         "message": "Connected to WiFi",
-                        "ip": wifi.get_ip()
+                        "ip": self.wifi.get_ip()
                     })
                 else:
                     self._send_json(writer, {
@@ -316,14 +326,10 @@ class WebServer:
         # --- Config Get ---
         elif path == '/api/config' and method == 'GET':
             try:
-                # Get current config
-                # Load board config dynamically to get current name
-                current_board = BoardConfig(config.BOARD_CONFIG_FILE)
-                
                 config_data = {
-                    "hostname": config.HOSTNAME,
-                    "board": config.BOARD,
-                    "board_name": current_board.get_name()
+                    "hostname": self.config.get_hostname(),
+                    "board": self.config.get_board_config_file().replace('/boards/', ''),
+                    "board_name": self.board.get_name()
                 }
                 self._send_json(writer, config_data)
             except Exception as e:
@@ -348,7 +354,7 @@ class WebServer:
                         self._send_error(writer, 400, "Invalid hostname format")
                         await writer.drain()
                         return
-                    config.HOSTNAME = hostname
+                    self.config.set_hostname(hostname)
                 
                 if board is not None:
                     # Validate board filename - check if file exists
@@ -358,14 +364,14 @@ class WebServer:
                     try:
                         with open(board_file, 'r') as f:
                             json.load(f)  # Validate it's valid JSON
-                        config.BOARD = board_filename
+                        self.config.set_board_config_file(board_file)
                     except (OSError, ValueError) as e:
                         self._send_error(writer, 400, f"Invalid board file: {board_filename} - {e}")
                         await writer.drain()
                         return
                 
                 # Save config
-                if config.save():
+                if self.config.save_config():
                     self._send_json(writer, {
                         "status": "success",
                         "message": "Configuration updated. Restart required for changes to take effect.",

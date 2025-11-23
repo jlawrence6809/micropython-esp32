@@ -1,6 +1,5 @@
 import network
 import time
-from config_manager import config
 
 class WiFiManager:
     """Manages WiFi connection with AP fallback."""
@@ -14,7 +13,8 @@ class WiFiManager:
     CONNECT_TIMEOUT = 15  # seconds
     CONNECT_RETRY_DELAY = 1  # seconds
     
-    def __init__(self):
+    def __init__(self, config_manager):
+        self.config = config_manager
         self.sta = network.WLAN(network.STA_IF)
         self.ap = network.WLAN(network.AP_IF)
         self.mode = None  # 'sta', 'ap', or None
@@ -35,9 +35,9 @@ class WiFiManager:
             timeout = self.CONNECT_TIMEOUT
         
         if ssid is None:
-            ssid = config.WIFI_SSID
+            ssid = self.config.get_wifi_ssid()
         if password is None:
-            password = config.WIFI_PASSWORD
+            password = self.config.get_wifi_password()
         
         print(f"Connecting to WiFi: {ssid}")
         
@@ -84,7 +84,7 @@ class WiFiManager:
         """
         if ssid is None:
             # Use hostname for AP SSID
-            hostname = config.HOSTNAME if config.HOSTNAME else "esp32"
+            hostname = self.config.get_hostname()
             ssid = f"{hostname}-setup"
         if password is None:
             password = self.AP_PASSWORD
@@ -207,7 +207,8 @@ class WiFiManager:
             True if saved successfully
         """
         try:
-            config.update_wifi(ssid, password)
+            self.config.set_wifi_credentials(ssid, password)
+            self.config.save_config()
             print(f"WiFi credentials saved: {ssid}")
             return True
         except Exception as e:

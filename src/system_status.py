@@ -5,14 +5,14 @@ import machine
 import network
 import esp32
 import sys
-from config_manager import config
 
 class SystemStatus:
     """Collects and formats system status information."""
     
-    def __init__(self, board_config, start_time):
+    def __init__(self, board_config, start_time, config_manager):
         self.board = board_config
         self.start_time = start_time
+        self.config = config_manager
     
     def get_status(self):
         """
@@ -76,7 +76,7 @@ class SystemStatus:
             info['MAC Address'] = "Unknown"
         
         # Hostname
-        hostname = config.HOSTNAME if hasattr(config, 'HOSTNAME') and config.HOSTNAME else "esp32"
+        hostname = self.config.get_hostname()
         info['Hostname'] = f"{hostname}.local"
         
         # Connection-dependent info
