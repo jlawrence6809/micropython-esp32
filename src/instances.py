@@ -1,8 +1,6 @@
 # instances.py - Global singleton instance manager
 # This module provides a centralized location for all singleton instances
 
-import machine
-
 class InstanceManager:
     """Manages all singleton instances for the application.
     
@@ -64,7 +62,7 @@ class InstanceManager:
         print(f"✓ BoardConfig initialized: {self.board.get_name()}")
         
         # Set CPU clock speed from board config
-        self._set_cpu_frequency()
+        self.board.set_cpu_frequency()
         
         # Initialize WiFi manager
         self.wifi = WiFiManager(self.config)
@@ -87,22 +85,6 @@ class InstanceManager:
         print(f"✓ RuleEngine initialized")
         
         print("=" * 50)
-    
-    def _set_cpu_frequency(self):
-        """Set CPU frequency from board configuration."""
-        try:
-            clock_speed = self.board.get_clock_speed()
-            if clock_speed:
-                current_freq = machine.freq()
-                if current_freq != clock_speed:
-                    machine.freq(clock_speed)
-                    print(f"✓ CPU frequency set to {clock_speed // 1_000_000} MHz (was {current_freq // 1_000_000} MHz)")
-                else:
-                    print(f"✓ CPU frequency already at {clock_speed // 1_000_000} MHz")
-            else:
-                print(f"✓ CPU frequency: {machine.freq() // 1_000_000} MHz (using default)")
-        except Exception as e:
-            print(f"⚠ Failed to set CPU frequency: {e}")
     
     def __repr__(self):
         """Pretty print available instances."""

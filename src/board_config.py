@@ -85,6 +85,31 @@ class BoardConfig:
         """Get recommended CPU clock speed in Hz (e.g., 240000000 for 240 MHz)."""
         return self.config.get('clock_speed', None)
     
+    def set_cpu_frequency(self):
+        """Set CPU frequency from board configuration.
+        
+        Returns:
+            True if frequency was set, False if using default
+        """
+        import machine
+        
+        try:
+            clock_speed = self.get_clock_speed()
+            if clock_speed:
+                current_freq = machine.freq()
+                if current_freq != clock_speed:
+                    machine.freq(clock_speed)
+                    print(f"✓ CPU frequency set to {clock_speed // 1_000_000} MHz (was {current_freq // 1_000_000} MHz)")
+                else:
+                    print(f"✓ CPU frequency already at {clock_speed // 1_000_000} MHz")
+                return True
+            else:
+                print(f"✓ CPU frequency: {machine.freq() // 1_000_000} MHz (using default)")
+                return False
+        except Exception as e:
+            print(f"⚠ Failed to set CPU frequency: {e}")
+            return False
+    
     def to_dict(self):
         """Return full configuration as dictionary."""
         return self.config.copy()
