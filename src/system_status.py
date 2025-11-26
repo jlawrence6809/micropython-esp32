@@ -16,45 +16,49 @@ class SystemStatus:
     
     def get_status(self):
         """
-        Get comprehensive system status as a dictionary.
-        Returns a dict with human-readable key-value pairs.
+        Get comprehensive system status as an ordered list.
+        Returns a list of {"key": "...", "value": "..."} objects to guarantee order.
         """
-        status = {}
+        status_items = []
         
         # Board info
         board_name = self.board.get_name()
-        status['Board'] = board_name
-        status['Chip'] = self.board.get_chip()
+        status_items.append({'key': 'Board', 'value': board_name})
+        status_items.append({'key': 'Chip', 'value': self.board.get_chip()})
         
         # Warn if board is unconfigured
         if board_name == "Unconfigured Board":
-            status['⚠️ WARNING'] = "Board not configured! Set board in config.json"
-        status['MicroPython'] = self._get_micropython_version()
+            status_items.append({'key': '⚠️ WARNING', 'value': "Board not configured! Set board in config.json"})
+        
+        status_items.append({'key': 'MicroPython', 'value': self._get_micropython_version()})
         
         # Network info
         network_info = self._get_network_info()
-        status.update(network_info)
+        for key, value in network_info:
+            status_items.append({'key': key, 'value': value})
         
         # CPU info
-        status['CPU Frequency'] = f"{machine.freq() // 1_000_000} MHz"
-        status['Chip Temperature'] = self._get_chip_temperature()
+        status_items.append({'key': 'CPU Frequency', 'value': f"{machine.freq() // 1_000_000} MHz"})
+        status_items.append({'key': 'Chip Temperature', 'value': self._get_chip_temperature()})
         
         # Uptime
-        status['Uptime'] = self._get_uptime()
-        status['Last Boot'] = self._get_boot_reason()
+        status_items.append({'key': 'Uptime', 'value': self._get_uptime()})
+        status_items.append({'key': 'Last Boot', 'value': self._get_boot_reason()})
         
         # Memory info
         memory_info = self._get_memory_info()
-        status.update(memory_info)
+        for key, value in memory_info:
+            status_items.append({'key': key, 'value': value})
         
         # Flash storage info
         flash_info = self._get_flash_info()
-        status.update(flash_info)
+        for key, value in flash_info:
+            status_items.append({'key': key, 'value': value})
         
         # GC info
-        status['GC Collections'] = str(gc.mem_alloc())
+        status_items.append({'key': 'GC Collections', 'value': str(gc.mem_alloc())})
         
-        return status
+        return status_items
     
     def _get_micropython_version(self):
         """Get MicroPython version string."""
@@ -64,42 +68,42 @@ class SystemStatus:
             return "Unknown"
     
     def _get_network_info(self):
-        """Get WiFi network information."""
-        info = {}
+        """Get WiFi network information as list of tuples."""
+        info = []
         wlan = network.WLAN(network.STA_IF)
         
         # MAC address (always available)
         try:
             mac = ':'.join(['{:02X}'.format(b) for b in wlan.config('mac')])
-            info['MAC Address'] = mac
+            info.append(('MAC Address', mac))
         except:
-            info['MAC Address'] = "Unknown"
+            info.append(('MAC Address', "Unknown"))
         
         # Hostname
         hostname = self.config.get_hostname()
-        info['Hostname'] = f"{hostname}.local"
+        info.append(('Hostname', f"{hostname}.local"))
         
         # Connection-dependent info
         if wlan.isconnected():
             try:
                 ifconfig = wlan.ifconfig()
-                info['IP Address'] = ifconfig[0]
+                info.append(('IP Address', ifconfig[0]))
             except:
-                info['IP Address'] = "Error"
+                info.append(('IP Address', "Error"))
             
             try:
-                info['WiFi SSID'] = wlan.config('essid')
+                info.append(('WiFi SSID', wlan.config('essid')))
             except:
-                info['WiFi SSID'] = "Unknown"
+                info.append(('WiFi SSID', "Unknown"))
             
             try:
                 rssi = wlan.status('rssi')
-                info['WiFi Signal'] = f"{rssi} dBm"
+                info.append(('WiFi Signal', f"{rssi} dBm"))
             except:
                 pass  # Don't add signal if unavailable
         else:
-            info['IP Address'] = "Not connected"
-            info['WiFi SSID'] = "Not connected"
+            info.append(('IP Address', "Not connected"))
+            info.append(('WiFi SSID', "Not connected"))
         
         return info
     
@@ -140,26 +144,26 @@ class SystemStatus:
             return "Unknown"
     
     def _get_memory_info(self):
-        """Get memory usage information."""
-        info = {}
+        """Get memory usage information as list of tuples."""
+        info = []
         try:
             mem_free = gc.mem_free()
             mem_alloc = gc.mem_alloc()
             mem_total = mem_free + mem_alloc
             
-            info['Free Memory'] = f"{mem_free:,} bytes"
-            info['Total Memory'] = f"{mem_total:,} bytes"
-            info['Memory Usage'] = f"{(mem_alloc / mem_total * 100):.1f}%"
+            info.append(('Free Memory', f"{mem_free:,} bytes"))
+            info.append(('Total Memory', f"{mem_total:,} bytes"))
+            info.append(('Memory Usage', f"{(mem_alloc / mem_total * 100):.1f}%"))
         except:
-            info['Free Memory'] = "Unknown"
-            info['Total Memory'] = "Unknown"
-            info['Memory Usage'] = "Unknown"
+            info.append(('Free Memory', "Unknown"))
+            info.append(('Total Memory', "Unknown"))
+            info.append(('Memory Usage', "Unknown"))
         
         return info
     
     def _get_flash_info(self):
-        """Get flash storage information."""
-        info = {}
+        """Get flash storage information as list of tuples."""
+        info = []
         try:
             stat = os.statvfs('/')
             block_size = stat[0]
@@ -171,15 +175,15 @@ class SystemStatus:
             flash_used = flash_total - flash_free
             flash_usage_pct = (flash_used / flash_total * 100) if flash_total > 0 else 0
             
-            info['Flash Total'] = f"{flash_total:,} KB"
-            info['Flash Used'] = f"{flash_used:,} KB"
-            info['Flash Free'] = f"{flash_free:,} KB"
-            info['Flash Usage'] = f"{flash_usage_pct:.1f}%"
+            info.append(('Flash Total', f"{flash_total:,} KB"))
+            info.append(('Flash Used', f"{flash_used:,} KB"))
+            info.append(('Flash Free', f"{flash_free:,} KB"))
+            info.append(('Flash Usage', f"{flash_usage_pct:.1f}%"))
         except:
-            info['Flash Total'] = "Unknown"
-            info['Flash Used'] = "Unknown"
-            info['Flash Free'] = "Unknown"
-            info['Flash Usage'] = "Unknown"
+            info.append(('Flash Total', "Unknown"))
+            info.append(('Flash Used', "Unknown"))
+            info.append(('Flash Free', "Unknown"))
+            info.append(('Flash Usage', "Unknown"))
         
         return info
 

@@ -3,13 +3,15 @@ import { Section } from '../components/Section';
 
 /**
  * Global info is the current state of the device.
- * The backend sends a dynamic key-value object that we render as-is.
+ * The backend sends an ordered array of key-value pairs.
  */
+interface StatusItem {
+  key: string;
+  value: string | number;
+}
+
 export const GlobalInfo = () => {
-  const [globalInfo, setGlobalInfo] = useState<Record<
-    string,
-    string | number
-  > | null>(null);
+  const [globalInfo, setGlobalInfo] = useState<StatusItem[] | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -39,9 +41,9 @@ export const GlobalInfo = () => {
 
   return (
     <Section className="GlobalInfo" title="System Info">
-      {Object.entries(globalInfo).map(([key, value]) => (
-        <p key={key}>
-          <strong>{key}:</strong> {value}
+      {globalInfo.map((item, index) => (
+        <p key={index}>
+          <strong>{item.key}:</strong> {item.value}
         </p>
       ))}
     </Section>
