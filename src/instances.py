@@ -59,11 +59,9 @@ class InstanceManager:
         print(f"✓ ConfigManager initialized")
         
         # Initialize board config (gets board file from config)
+        # Must be initialized after ConfigManager
         self.board = BoardConfig()
         print(f"✓ BoardConfig initialized: {self.board.get_name()}")
-        
-        # Set CPU clock speed from board config
-        self.board.set_cpu_frequency()
         
         # Initialize WiFi manager (uses config from instances)
         self.wifi = WiFiManager()

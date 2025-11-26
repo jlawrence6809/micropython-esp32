@@ -34,3 +34,6 @@ def setup_wifi():
 
 # Setup WiFi on boot
 mdns_server = setup_wifi()
+
+# Set CPU clock speed from board config
+instances.board.set_cpu_frequency()
