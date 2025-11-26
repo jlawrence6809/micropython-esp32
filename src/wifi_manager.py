@@ -214,4 +214,85 @@ class WiFiManager:
         except Exception as e:
             print(f"Failed to save credentials: {e}")
             return False
+    
+    def set_hostname(self, hostname=None):
+        """Set device hostname.
+        
+        Args:
+            hostname: Hostname to set (defaults to config hostname)
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if hostname is None:
+            hostname = self.config.get_hostname()
+        
+        try:
+            network.hostname(hostname)
+            print(f'Hostname set to: {hostname}')
+            return True
+        except Exception as e:
+            print(f'Failed to set hostname: {e}')
+            return False
+    
+    def setup_mdns(self, hostname=None):
+        """Setup mDNS responder for hostname.local access.
+        
+        Args:
+            hostname: Hostname for mDNS (defaults to config hostname)
+        
+        Returns:
+            mDNS server instance or None if failed/unavailable
+        """
+        if hostname is None:
+            hostname = self.config.get_hostname()
+        
+        try:
+            import mdns
+            mdns_server = mdns.Server()
+            mdns_server.start(hostname, "MicroPython ESP32 Automation")
+            print(f"mDNS started: {hostname}.local")
+            return mdns_server
+        except ImportError:
+            print("mDNS not available (requires esp32 port with mdns module)")
+            return None
+        except Exception as e:
+            print(f"Failed to start mDNS: {e}")
+            return None
+    
+    def setup_and_connect(self):
+        """Complete WiFi setup flow with hostname, connection, and mDNS.
+        
+        This method handles the complete WiFi initialization sequence:
+        1. Check if credentials are configured
+        2. Set hostname
+        3. Connect to WiFi (or start AP mode as fallback)
+        4. Setup mDNS if in station mode
+        
+        Returns:
+            tuple: (mode, mdns_server) where:
+                - mode: 'sta' if connected to WiFi, 'ap' if in AP mode
+                - mdns_server: mDNS server instance (if in STA mode), None otherwise
+        """
+        hostname = self.config.get_hostname()
+        
+        # Check if WiFi credentials are configured
+        if not self.config.get_wifi_ssid() or not self.config.get_wifi_password():
+            print('WiFi credentials not configured, starting AP mode...')
+            self.start_ap_mode()
+            print(f"Connect to '{hostname}-setup' network to configure WiFi")
+            return 'ap', None
+        
+        # Set hostname before connecting
+        self.set_hostname(hostname)
+        
+        # Try to connect with AP fallback
+        mode = self.connect_with_fallback()
+        
+        # Setup mDNS if in station mode
+        mdns_server = None
+        if mode == 'sta':
+            mdns_server = self.setup_mdns(hostname)
+        
+        return mode, mdns_server
 
