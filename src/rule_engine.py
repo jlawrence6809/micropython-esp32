@@ -10,18 +10,16 @@ Example rules:
 - Complex: "get_temperature() > 25 and get_humidity() < 60"
 """
 
+from instances import instances
+
 class RuleEngine:
     """Evaluates automation rules safely with restricted Python eval."""
     
-    def __init__(self, sensor_manager, time_sync=None):
-        """Initialize rule engine with sensor manager and optional time sync.
+    def __init__(self):
+        """Initialize rule engine.
         
-        Args:
-            sensor_manager: SensorManager instance for reading sensor values
-            time_sync: TimeSync instance for real time (optional)
+        Uses global instances for sensors and time_sync.
         """
-        self.sensors = sensor_manager
-        self.time_sync = time_sync
         self._compiled_cache = {}  # Cache compiled code objects
         
     def time(self, hour, minute=0, second=0):
@@ -45,11 +43,11 @@ class RuleEngine:
         
         Uses TimeSync if available, otherwise falls back to sensor dummy time.
         """
-        if self.time_sync and self.time_sync.is_synced:
-            return self.time_sync.get_minute_of_day() * 60
+        if instances.time_sync and instances.time_sync.is_synced:
+            return instances.time_sync.get_minute_of_day() * 60
         else:
             # Fallback to sensor manager's dummy time
-            return self.sensors.get_time_seconds()
+            return instances.sensors.get_time_seconds()
     
     def _get_safe_globals(self):
         """Create a restricted global namespace for eval.
@@ -59,17 +57,17 @@ class RuleEngine:
         """
         return {
             # Sensor functions
-            'get_temperature': self.sensors.get_temperature,
-            'get_humidity': self.sensors.get_humidity,
-            'get_light_level': self.sensors.get_light_level,
-            'get_switch_state': self.sensors.get_switch_state,
+            'get_temperature': instances.sensors.get_temperature,
+            'get_humidity': instances.sensors.get_humidity,
+            'get_light_level': instances.sensors.get_light_level,
+            'get_switch_state': instances.sensors.get_switch_state,
             'get_time': self.get_current_time_seconds,  # Use real time if available
             
             # Last values (for edge detection)
-            'get_last_temperature': self.sensors.get_last_temperature,
-            'get_last_humidity': self.sensors.get_last_humidity,
-            'get_last_light_level': self.sensors.get_last_light_level,
-            'get_last_switch_state': self.sensors.get_last_switch_state,
+            'get_last_temperature': instances.sensors.get_last_temperature,
+            'get_last_humidity': instances.sensors.get_last_humidity,
+            'get_last_light_level': instances.sensors.get_last_light_level,
+            'get_last_switch_state': instances.sensors.get_last_switch_state,
             
             # Time helper
             'time': self.time,

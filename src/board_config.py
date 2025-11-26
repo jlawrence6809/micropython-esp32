@@ -1,16 +1,23 @@
 import json
+from instances import instances
 
 class BoardConfig:
     """Board configuration manager for GPIO and hardware details."""
     
-    def __init__(self, board_file):
-        """Load board configuration from JSON file."""
-        self.board_file = board_file
+    def __init__(self):
+        """Load board configuration from JSON file.
+        
+        Gets board file path from global config manager.
+        """
+        self.board_file = None
         self.config = {}
         self.load()
     
     def load(self):
         """Load board configuration from file."""
+        # Get board file path from config manager
+        self.board_file = instances.config.get_board_config_file()
+        
         try:
             with open(self.board_file, 'r') as f:
                 self.config = json.load(f)

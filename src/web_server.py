@@ -6,36 +6,22 @@ import machine
 import time
 import sys
 from system_status import SystemStatus
+from instances import instances
 
 class WebServer:
-    def __init__(self, port=80, www_dir='/www', config_manager=None, board_config=None, 
-                 wifi_manager=None, sensor_manager=None, relay_manager=None, time_sync=None):
-        """Initialize web server with singleton instances.
+    def __init__(self, port=80, www_dir='/www'):
+        """Initialize web server.
         
         Args:
             port: HTTP server port (default 80)
             www_dir: Directory containing static web files
-            config_manager: ConfigManager singleton instance
-            board_config: BoardConfig singleton instance
-            wifi_manager: WiFiManager singleton instance
-            sensor_manager: SensorManager singleton instance
-            relay_manager: RelayManager singleton instance
-            time_sync: TimeSync singleton instance
         """
         self.port = port
         self.www_dir = www_dir
         self.start_time = time.ticks_ms()
         
-        # Store singleton references
-        self.config = config_manager
-        self.board = board_config
-        self.wifi = wifi_manager
-        self.sensors = sensor_manager
-        self.relays = relay_manager
-        self.time_sync = time_sync
-        
-        # Initialize system status with singletons
-        self.system_status = SystemStatus(self.board, self.start_time, self.config, self.time_sync)
+        # Initialize system status
+        self.system_status = SystemStatus(self.start_time)
         
     async def start(self):
         print(f"Starting web server on port {self.port}...")
@@ -153,7 +139,7 @@ class WebServer:
 
         # --- Relay Config ---
         elif path == '/api/relays/config' and method == 'GET':
-            relay_config = self.relays.get_relays()
+            relay_config = instances.relays.get_relays()
             # Original API returned { "count": N, "relays": [...] }
             # Our get_relays returns { "relays": [...] }
             # Let's match the old shape roughly
@@ -170,7 +156,7 @@ class WebServer:
                 new_relays = data.get('relays', [])
                 # If full doc is passed, extract relays
                 # Update config
-                if self.relays.update_config(new_relays):
+                if instances.relays.update_config(new_relays):
                     self._send_json(writer, {"success": True})
                 else:
                     self._send_error(writer, 400, "Invalid config format")
@@ -189,7 +175,7 @@ class WebServer:
                 if label is None or state is None:
                     self._send_error(writer, 400, "Missing label or state")
                 else:
-                    if self.relays.set_relay_by_label(label, state):
+                    if instances.relays.set_relay_by_label(label, state):
                         self._send_json(writer, {"status": "success", "message": "Relay updated"})
                     else:
                         self._send_json(writer, {"status": "error", "message": "Relay not found"})
@@ -202,10 +188,10 @@ class WebServer:
         elif path == '/api/gpio/available' and method == 'GET':
             try:
                 # Get pins currently in use by relays
-                used_pins = [relay['pin'] for relay in self.relays.get_relays().get('relays', [])]
+                used_pins = [relay['pin'] for relay in instances.relays.get_relays().get('relays', [])]
                 
                 # Get available pins from board config
-                available = self.board.get_available_pins(exclude_pins=used_pins)
+                available = instances.board.get_available_pins(exclude_pins=used_pins)
                 
                 # Return as object with pin numbers as keys (matches old API format)
                 result = {str(pin): str(pin) for pin in available}
@@ -217,8 +203,8 @@ class WebServer:
         # --- Sensors (Dummy) ---
         elif path == '/api/sensors' and method == 'GET':
             # Return sensor data from SensorManager if available
-            if self.sensors:
-                sensor_data = self.sensors.to_dict()
+            if instances.sensors:
+                sensor_data = instances.sensors.to_dict()
             else:
                 # Fallback to dummy data if no sensor manager
                 sensor_data = {
@@ -259,7 +245,7 @@ class WebServer:
         # --- WiFi Scan ---
         elif path == '/api/wifi/scan' and method == 'GET':
             try:
-                networks = self.wifi.scan_networks()
+                networks = instances.wifi.scan_networks()
                 self._send_json(writer, {"networks": networks})
             except Exception as e:
                 self._send_error(writer, 500, str(e))
@@ -279,15 +265,15 @@ class WebServer:
                     return
                 
                 # Try to connect
-                if self.wifi.connect(ssid, password, timeout=15):
+                if instances.wifi.connect(ssid, password, timeout=15):
                     # Save credentials if requested
                     if save:
-                        self.wifi.save_credentials(ssid, password)
+                        instances.wifi.save_credentials(ssid, password)
                     
                     self._send_json(writer, {
                         "status": "success",
                         "message": "Connected to WiFi",
-                        "ip": self.wifi.get_ip()
+                        "ip": instances.wifi.get_ip()
                     })
                 else:
                     self._send_json(writer, {
@@ -329,9 +315,9 @@ class WebServer:
         elif path == '/api/config' and method == 'GET':
             try:
                 config_data = {
-                    "hostname": self.config.get_hostname(),
-                    "board": self.config.get_board_config_file().replace('/boards/', ''),
-                    "board_name": self.board.get_name()
+                    "hostname": instances.config.get_hostname(),
+                    "board": instances.config.get_board_config_file().replace('/boards/', ''),
+                    "board_name": instances.board.get_name()
                 }
                 self._send_json(writer, config_data)
             except Exception as e:
@@ -356,7 +342,7 @@ class WebServer:
                         self._send_error(writer, 400, "Invalid hostname format")
                         await writer.drain()
                         return
-                    self.config.set_hostname(hostname)
+                    instances.config.set_hostname(hostname)
                 
                 if board is not None:
                     # Validate board filename - check if file exists
@@ -366,14 +352,14 @@ class WebServer:
                     try:
                         with open(board_file, 'r') as f:
                             json.load(f)  # Validate it's valid JSON
-                        self.config.set_board_config_file(board_file)
+                        instances.config.set_board_config_file(board_file)
                     except (OSError, ValueError) as e:
                         self._send_error(writer, 400, f"Invalid board file: {board_filename} - {e}")
                         await writer.drain()
                         return
                 
                 # Save config
-                if self.config.save_config():
+                if instances.config.save_config():
                     self._send_json(writer, {
                         "status": "success",
                         "message": "Configuration updated. Restart required for changes to take effect.",

@@ -2,7 +2,6 @@
 # This file runs automatically after boot.py
 
 import uasyncio as asyncio
-from web_server import WebServer
 from instances import instances
 import sys
 
@@ -63,16 +62,7 @@ async def automation_loop():
 async def main():
     print("Starting main.py...")
     
-    # Use global singletons from instance manager
-    # Start Web Server (pass all singletons)
-    instances.server = WebServer(
-        config_manager=instances.config,
-        board_config=instances.board,
-        wifi_manager=instances.wifi,
-        sensor_manager=instances.sensors,
-        relay_manager=instances.relays,
-        time_sync=instances.time_sync
-    )
+    # Start Web Server (already initialized in instances)
     asyncio.create_task(instances.server.start())
     
     # Start Automation Loop

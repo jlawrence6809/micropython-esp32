@@ -52,20 +52,21 @@ class InstanceManager:
         from sensors import SensorManager
         from rule_engine import RuleEngine
         from time_sync import TimeSync
+        from web_server import WebServer
         
         # Initialize config manager
         self.config = ConfigManager()
         print(f"✓ ConfigManager initialized")
         
-        # Initialize board config
-        self.board = BoardConfig(self.config.get_board_config_file())
+        # Initialize board config (gets board file from config)
+        self.board = BoardConfig()
         print(f"✓ BoardConfig initialized: {self.board.get_name()}")
         
         # Set CPU clock speed from board config
         self.board.set_cpu_frequency()
         
-        # Initialize WiFi manager
-        self.wifi = WiFiManager(self.config)
+        # Initialize WiFi manager (uses config from instances)
+        self.wifi = WiFiManager()
         print(f"✓ WiFiManager initialized")
         
         # Initialize relay manager
@@ -80,9 +81,13 @@ class InstanceManager:
         self.time_sync = TimeSync()
         print(f"✓ TimeSync initialized")
         
-        # Initialize rule engine (needs sensors and time_sync)
-        self.rules = RuleEngine(self.sensors, self.time_sync)
+        # Initialize rule engine (uses sensors and time_sync from instances)
+        self.rules = RuleEngine()
         print(f"✓ RuleEngine initialized")
+        
+        # Initialize web server
+        self.server = WebServer()
+        print(f"✓ WebServer initialized")
         
         print("=" * 50)
     

@@ -1,5 +1,6 @@
 import network
 import time
+from instances import instances
 
 class WiFiManager:
     """Manages WiFi connection with AP fallback."""
@@ -13,8 +14,11 @@ class WiFiManager:
     CONNECT_TIMEOUT = 15  # seconds
     CONNECT_RETRY_DELAY = 1  # seconds
     
-    def __init__(self, config_manager):
-        self.config = config_manager
+    def __init__(self):
+        """Initialize WiFi manager.
+        
+        Uses global instances for config.
+        """
         self.sta = network.WLAN(network.STA_IF)
         self.ap = network.WLAN(network.AP_IF)
         self.mode = None  # 'sta', 'ap', or None
@@ -24,8 +28,8 @@ class WiFiManager:
         Connect to WiFi network.
         
         Args:
-            ssid: WiFi SSID (defaults to config.WIFI_SSID)
-            password: WiFi password (defaults to config.WIFI_PASSWORD)
+            ssid: WiFi SSID (defaults to configured SSID)
+            password: WiFi password (defaults to configured password)
             timeout: Connection timeout in seconds
         
         Returns:
@@ -35,9 +39,9 @@ class WiFiManager:
             timeout = self.CONNECT_TIMEOUT
         
         if ssid is None:
-            ssid = self.config.get_wifi_ssid()
+            ssid = instances.config.get_wifi_ssid()
         if password is None:
-            password = self.config.get_wifi_password()
+            password = instances.config.get_wifi_password()
         
         print(f"Connecting to WiFi: {ssid}")
         
@@ -84,7 +88,7 @@ class WiFiManager:
         """
         if ssid is None:
             # Use hostname for AP SSID
-            hostname = self.config.get_hostname()
+            hostname = instances.config.get_hostname()
             ssid = f"{hostname}-setup"
         if password is None:
             password = self.AP_PASSWORD
@@ -207,8 +211,8 @@ class WiFiManager:
             True if saved successfully
         """
         try:
-            self.config.set_wifi_credentials(ssid, password)
-            self.config.save_config()
+            instances.config.set_wifi_credentials(ssid, password)
+            instances.config.save_config()
             print(f"WiFi credentials saved: {ssid}")
             return True
         except Exception as e:
@@ -225,7 +229,7 @@ class WiFiManager:
             True if successful, False otherwise
         """
         if hostname is None:
-            hostname = self.config.get_hostname()
+            hostname = instances.config.get_hostname()
         
         try:
             network.hostname(hostname)
@@ -245,7 +249,7 @@ class WiFiManager:
             mDNS server instance or None if failed/unavailable
         """
         if hostname is None:
-            hostname = self.config.get_hostname()
+            hostname = instances.config.get_hostname()
         
         try:
             import mdns
@@ -274,10 +278,10 @@ class WiFiManager:
                 - mode: 'sta' if connected to WiFi, 'ap' if in AP mode
                 - mdns_server: mDNS server instance (if in STA mode), None otherwise
         """
-        hostname = self.config.get_hostname()
+        hostname = instances.config.get_hostname()
         
         # Check if WiFi credentials are configured
-        if not self.config.get_wifi_ssid() or not self.config.get_wifi_password():
+        if not instances.config.get_wifi_ssid() or not instances.config.get_wifi_password():
             print('WiFi credentials not configured, starting AP mode...')
             self.start_ap_mode()
             print(f"Connect to '{hostname}-setup' network to configure WiFi")

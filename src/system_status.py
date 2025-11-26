@@ -5,15 +5,18 @@ import machine
 import network
 import esp32
 import sys
+from instances import instances
 
 class SystemStatus:
     """Collects and formats system status information."""
     
-    def __init__(self, board_config, start_time, config_manager, time_sync=None):
-        self.board = board_config
+    def __init__(self, start_time):
+        """Initialize system status.
+        
+        Args:
+            start_time: System start time in milliseconds (from time.ticks_ms())
+        """
         self.start_time = start_time
-        self.config = config_manager
-        self.time_sync = time_sync
     
     def get_status(self):
         """
@@ -23,9 +26,9 @@ class SystemStatus:
         status_items = []
         
         # Board info
-        board_name = self.board.get_name()
+        board_name = instances.board.get_name()
         status_items.append({'key': 'Board', 'value': board_name})
-        status_items.append({'key': 'Chip', 'value': self.board.get_chip()})
+        status_items.append({'key': 'Chip', 'value': instances.board.get_chip()})
         
         # Warn if board is unconfigured
         if board_name == "Unconfigured Board":
@@ -77,14 +80,14 @@ class SystemStatus:
         """Get time synchronization information as list of tuples."""
         info = []
         
-        if self.time_sync:
-            if self.time_sync.is_synced:
+        if instances.time_sync:
+            if instances.time_sync.is_synced:
                 # Show current time
-                info.append(('Current Time', self.time_sync.get_time_string()))
-                info.append(('Current Date', self.time_sync.get_date_string()))
+                info.append(('Current Time', instances.time_sync.get_time_string()))
+                info.append(('Current Date', instances.time_sync.get_date_string()))
                 
                 # Show timezone
-                offset_hours = self.time_sync.TIMEZONE_OFFSET // 3600
+                offset_hours = instances.time_sync.TIMEZONE_OFFSET // 3600
                 if offset_hours != 0:
                     info.append(('Timezone', f"UTC{offset_hours:+d}"))
                 else:
@@ -109,7 +112,7 @@ class SystemStatus:
             info.append(('MAC Address', "Unknown"))
         
         # Hostname
-        hostname = self.config.get_hostname()
+        hostname = instances.config.get_hostname()
         info.append(('Hostname', f"{hostname}.local"))
         
         # Connection-dependent info
