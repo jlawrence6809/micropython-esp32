@@ -9,7 +9,7 @@ from system_status import SystemStatus
 
 class WebServer:
     def __init__(self, port=80, www_dir='/www', config_manager=None, board_config=None, 
-                 wifi_manager=None, sensor_manager=None, relay_manager=None):
+                 wifi_manager=None, sensor_manager=None, relay_manager=None, time_sync=None):
         """Initialize web server with singleton instances.
         
         Args:
@@ -20,6 +20,7 @@ class WebServer:
             wifi_manager: WiFiManager singleton instance
             sensor_manager: SensorManager singleton instance
             relay_manager: RelayManager singleton instance
+            time_sync: TimeSync singleton instance
         """
         self.port = port
         self.www_dir = www_dir
@@ -31,9 +32,10 @@ class WebServer:
         self.wifi = wifi_manager
         self.sensors = sensor_manager
         self.relays = relay_manager
+        self.time_sync = time_sync
         
         # Initialize system status with singletons
-        self.system_status = SystemStatus(self.board, self.start_time, self.config)
+        self.system_status = SystemStatus(self.board, self.start_time, self.config, self.time_sync)
         
     async def start(self):
         print(f"Starting web server on port {self.port}...")

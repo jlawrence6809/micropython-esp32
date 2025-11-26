@@ -1,58 +1,10 @@
 # boot.py - Runs on every boot
-# This file initializes all singleton instances and connects to WiFi
-
 import network
 import time
-
-# Import instance manager and all component classes
 from instances import instances
-from config_manager import ConfigManager
-from board_config import BoardConfig
-from wifi_manager import WiFiManager
-from relays import RelayManager
-from sensors import SensorManager
-from rule_engine import RuleEngine
 
-print("=" * 50)
-print("Initializing system singletons...")
-print("=" * 50)
-
-# Initialize all singleton instances via the instance manager
-instances.config = ConfigManager()
-print(f"✓ ConfigManager initialized")
-
-instances.board = BoardConfig(instances.config.get_board_config_file())
-print(f"✓ BoardConfig initialized: {instances.board.get_name()}")
-
-# Set CPU clock speed from board config
-try:
-    import machine
-    clock_speed = instances.board.get_clock_speed()
-    if clock_speed:
-        current_freq = machine.freq()
-        if current_freq != clock_speed:
-            machine.freq(clock_speed)
-            print(f"✓ CPU frequency set to {clock_speed // 1_000_000} MHz (was {current_freq // 1_000_000} MHz)")
-        else:
-            print(f"✓ CPU frequency already at {clock_speed // 1_000_000} MHz")
-    else:
-        print(f"✓ CPU frequency: {machine.freq() // 1_000_000} MHz (using default)")
-except Exception as e:
-    print(f"⚠ Failed to set CPU frequency: {e}")
-
-instances.wifi = WiFiManager(instances.config)
-print(f"✓ WiFiManager initialized")
-
-instances.relays = RelayManager()
-print(f"✓ RelayManager initialized ({len(instances.relays.get_relays().get('relays', []))} relays)")
-
-instances.sensors = SensorManager()
-print(f"✓ SensorManager initialized")
-
-instances.rules = RuleEngine(instances.sensors)
-print(f"✓ RuleEngine initialized")
-
-print("=" * 50)
+# Initialize all singleton instances
+instances.initialize()
 
 def setup_mdns(hostname):
     """Setup mDNS responder for hostname.local access."""
@@ -94,6 +46,11 @@ def setup_wifi():
     if mode == 'sta':
         print('WiFi connected successfully!')
         
+        # Sync time with NTP server
+        print("=" * 50)
+        instances.time_sync.sync()
+        print("=" * 50)
+        
         # Start mDNS for hostname.local access
         mdns_server = setup_mdns(hostname)
         
@@ -112,14 +69,3 @@ def setup_wifi():
 
 # Setup WiFi on boot
 mdns_server = setup_wifi()
-
-print("=" * 50)
-print("Boot complete! Access singletons via 'instances':")
-print("  from instances import instances")
-print("  instances.config   - ConfigManager")
-print("  instances.board    - BoardConfig")
-print("  instances.wifi     - WiFiManager")
-print("  instances.relays   - RelayManager")
-print("  instances.sensors  - SensorManager")
-print("  instances.rules    - RuleEngine")
-print("=" * 50)

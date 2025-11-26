@@ -13,13 +13,15 @@ Example rules:
 class RuleEngine:
     """Evaluates automation rules safely with restricted Python eval."""
     
-    def __init__(self, sensor_manager):
-        """Initialize rule engine with sensor manager.
+    def __init__(self, sensor_manager, time_sync=None):
+        """Initialize rule engine with sensor manager and optional time sync.
         
         Args:
             sensor_manager: SensorManager instance for reading sensor values
+            time_sync: TimeSync instance for real time (optional)
         """
         self.sensors = sensor_manager
+        self.time_sync = time_sync
         self._compiled_cache = {}  # Cache compiled code objects
         
     def time(self, hour, minute=0, second=0):
@@ -38,6 +40,17 @@ class RuleEngine:
         """
         return hour * 3600 + minute * 60 + second
     
+    def get_current_time_seconds(self):
+        """Get current time in seconds since midnight.
+        
+        Uses TimeSync if available, otherwise falls back to sensor dummy time.
+        """
+        if self.time_sync and self.time_sync.is_synced:
+            return self.time_sync.get_minute_of_day() * 60
+        else:
+            # Fallback to sensor manager's dummy time
+            return self.sensors.get_time_seconds()
+    
     def _get_safe_globals(self):
         """Create a restricted global namespace for eval.
         
@@ -50,7 +63,7 @@ class RuleEngine:
             'get_humidity': self.sensors.get_humidity,
             'get_light_level': self.sensors.get_light_level,
             'get_switch_state': self.sensors.get_switch_state,
-            'get_time': self.sensors.get_time_seconds,
+            'get_time': self.get_current_time_seconds,  # Use real time if available
             
             # Last values (for edge detection)
             'get_last_temperature': self.sensors.get_last_temperature,

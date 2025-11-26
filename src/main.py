@@ -70,7 +70,8 @@ async def main():
         board_config=instances.board,
         wifi_manager=instances.wifi,
         sensor_manager=instances.sensors,
-        relay_manager=instances.relays
+        relay_manager=instances.relays,
+        time_sync=instances.time_sync
     )
     asyncio.create_task(instances.server.start())
     

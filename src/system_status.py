@@ -9,10 +9,11 @@ import sys
 class SystemStatus:
     """Collects and formats system status information."""
     
-    def __init__(self, board_config, start_time, config_manager):
+    def __init__(self, board_config, start_time, config_manager, time_sync=None):
         self.board = board_config
         self.start_time = start_time
         self.config = config_manager
+        self.time_sync = time_sync
     
     def get_status(self):
         """
@@ -31,6 +32,11 @@ class SystemStatus:
             status_items.append({'key': '⚠️ WARNING', 'value': "Board not configured! Set board in config.json"})
         
         status_items.append({'key': 'MicroPython', 'value': self._get_micropython_version()})
+        
+        # Time info (if available)
+        time_info = self._get_time_info()
+        for key, value in time_info:
+            status_items.append({'key': key, 'value': value})
         
         # Network info
         network_info = self._get_network_info()
@@ -66,6 +72,29 @@ class SystemStatus:
             return sys.version.split()[0]
         except:
             return "Unknown"
+    
+    def _get_time_info(self):
+        """Get time synchronization information as list of tuples."""
+        info = []
+        
+        if self.time_sync:
+            if self.time_sync.is_synced:
+                # Show current time
+                info.append(('Current Time', self.time_sync.get_time_string()))
+                info.append(('Current Date', self.time_sync.get_date_string()))
+                
+                # Show timezone
+                offset_hours = self.time_sync.TIMEZONE_OFFSET // 3600
+                if offset_hours != 0:
+                    info.append(('Timezone', f"UTC{offset_hours:+d}"))
+                else:
+                    info.append(('Timezone', 'UTC'))
+            else:
+                info.append(('Time Status', 'Not synced'))
+        else:
+            info.append(('Time Status', 'TimeSync not available'))
+        
+        return info
     
     def _get_network_info(self):
         """Get WiFi network information as list of tuples."""
