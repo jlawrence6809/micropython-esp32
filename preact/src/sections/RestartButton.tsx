@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { postRestart } from '../api';
 
 const RESTART_SECONDS = 5;
 
@@ -13,7 +14,7 @@ export const RestartButton = () => {
       <button
         onClick={async () => {
           try {
-            await fetch('/api/restart', { method: 'POST' });
+            await postRestart();
             setRestartSuccess(true);
             setTimeout(() => {
               setRestartSuccess(false);

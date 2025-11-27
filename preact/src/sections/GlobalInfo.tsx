@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Section } from '../components/Section';
+import { fetchStatus } from '../api';
 
 /**
  * Global info is the current state of the device.
@@ -16,9 +17,8 @@ export const GlobalInfo = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetch('/api/status');
-        const json = await data.json();
-        setGlobalInfo(json);
+        const data = await fetchStatus();
+        setGlobalInfo(data);
       } catch (error) {
         console.error('Failed to load global info:', error);
         setGlobalInfo(null);

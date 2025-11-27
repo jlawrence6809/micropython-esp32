@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Section } from '../components/Section';
+import { fetchWifiStatus, fetchWifiScan, postWifiConnect } from '../api';
 
 type Network = {
   ssid: string;
@@ -35,8 +36,7 @@ export const WifiForm = () => {
 
   const loadStatus = async () => {
     try {
-      const response = await fetch('/api/wifi/status');
-      const data = await response.json();
+      const data = await fetchWifiStatus();
       setStatus(data);
     } catch (err) {
       console.error('Failed to load WiFi status:', err);
@@ -46,9 +46,8 @@ export const WifiForm = () => {
   const scanNetworks = async () => {
     setScanning(true);
     try {
-      const response = await fetch('/api/wifi/scan');
-      const data = await response.json();
-      setNetworks(data.networks || []);
+      const networks = await fetchWifiScan();
+      setNetworks(networks);
     } catch (err) {
       alert('Failed to scan networks');
     } finally {
@@ -65,15 +64,12 @@ export const WifiForm = () => {
 
     setConnecting(true);
     try {
-      const response = await fetch('/api/wifi/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ssid: selectedSsid, password, save: true }),
-      });
-      const data = await response.json();
-      
+      const data = await postWifiConnect(selectedSsid, password, true);
+
       if (data.status === 'success') {
-        alert(`Connected to ${selectedSsid}!\nIP: ${data.ip}\n\nDevice will now be accessible at this IP address.`);
+        alert(
+          `Connected to ${selectedSsid}!\nIP: ${data.ip}\n\nDevice will now be accessible at this IP address.`,
+        );
         // Reload status after connection
         setTimeout(loadStatus, 2000);
       } else {
@@ -89,7 +85,14 @@ export const WifiForm = () => {
   return (
     <Section title="WiFi Settings">
       {status && (
-        <div style={{ marginBottom: '1rem', padding: '0.5rem', background: '#333', borderRadius: '4px' }}>
+        <div
+          style={{
+            marginBottom: '1rem',
+            padding: '0.5rem',
+            background: '#333',
+            borderRadius: '4px',
+          }}
+        >
           <strong>Current Status:</strong>
           {status.sta_connected ? (
             <div style={{ color: '#4CAF50' }}>
@@ -124,7 +127,11 @@ export const WifiForm = () => {
             <select
               value={selectedSsid}
               onChange={(e) => setSelectedSsid(e.currentTarget.value)}
-              style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem' }}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                marginBottom: '0.5rem',
+              }}
             >
               <option value="">Select a network...</option>
               {networks.map((net) => (
@@ -160,7 +167,10 @@ export const WifiForm = () => {
           />
         </div>
 
-        <button type="submit" disabled={connecting || !selectedSsid || !password}>
+        <button
+          type="submit"
+          disabled={connecting || !selectedSsid || !password}
+        >
           {connecting ? 'Connecting...' : 'Connect & Save'}
         </button>
       </form>

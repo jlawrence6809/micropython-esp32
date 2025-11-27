@@ -76,3 +76,46 @@ export const postConfig = async (config: {
   });
   return await response.json();
 };
+
+// Status API
+export const fetchStatus = async () => {
+  const response = await fetch('/api/status');
+  return await response.json();
+};
+
+// Sensor API
+export const fetchSensors = async () => {
+  const response = await fetch('/api/sensors');
+  return await response.json();
+};
+
+// WiFi API
+export const fetchWifiStatus = async () => {
+  const response = await fetch('/api/wifi/status');
+  return await response.json();
+};
+
+export const fetchWifiScan = async () => {
+  const response = await fetch('/api/wifi/scan');
+  const data = await response.json();
+  return data.networks || [];
+};
+
+export const postWifiConnect = async (
+  ssid: string,
+  password: string,
+  save: boolean = true,
+) => {
+  const response = await fetch('/api/wifi/connect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ssid, password, save }),
+  });
+  return await response.json();
+};
+
+// System API
+export const postRestart = async () => {
+  const response = await fetch('/api/restart', { method: 'POST' });
+  return await response.json();
+};

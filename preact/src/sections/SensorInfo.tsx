@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Section } from '../components/Section';
+import { fetchSensors } from '../api';
 
 type SensorInfoResponse = {
   Temperature?: number;
@@ -19,9 +20,12 @@ export const SensorInfo = () => {
 
   useEffect(() => {
     const load = async () => {
-      const data = await fetch('/api/sensors');
-      const json = await data.json();
-      setSensorInfo(json);
+      try {
+        const data = await fetchSensors();
+        setSensorInfo(data);
+      } catch (error) {
+        console.error('Failed to load sensors:', error);
+      }
     };
     load();
   }, []);
