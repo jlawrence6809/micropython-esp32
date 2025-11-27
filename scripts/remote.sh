@@ -38,5 +38,6 @@ if [ -z "$PORT" ]; then
 fi
 
 # Run mpremote with all arguments passed through
-mpremote connect "$PORT" "$@"
+# Use 'resume' to disable auto soft-reset and avoid triggering boot.py
+mpremote connect "$PORT" resume "$@"
 
