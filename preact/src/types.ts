@@ -27,6 +27,7 @@ export type RelayConfig = {
   defaultValue: boolean; // default state on boot
   defaultAuto: boolean; // default mode on boot (true = auto, false = manual)
   rule: string;
+  last_error?: string | null; // Runtime error from last rule evaluation
 };
 
 /**

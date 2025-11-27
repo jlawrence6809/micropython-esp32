@@ -31,31 +31,26 @@ export const postRelayConfig = async (updatedConfigs: RelayConfig[]) => {
 
 export interface ValidationResponse {
   success: boolean;
-  error?: {
-    message: string;
-    path: number[];
-  };
-  returnType?: number;
+  message?: string;
+  error?: string;
 }
 
 export const validateRule = async (
   rule: string,
 ): Promise<ValidationResponse> => {
-  // const response = await fetch('/validate-rule', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   // Send the raw JSON rule (e.g., ["GT",5,3]) without wrapping in an object
-  //   body: rule,
-  // });
+  const response = await fetch('/api/validate-rule', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: rule,
+  });
 
-  // if (!response.ok) {
-  //   throw new Error(
-  //     `Validation request failed: ${response.status} ${response.statusText}`,
-  //   );
-  // }
+  if (!response.ok) {
+    throw new Error(
+      `Validation request failed: ${response.status} ${response.statusText}`,
+    );
+  }
 
-  // return await response.json();
-  return { success: true };
+  return await response.json();
 };
 
 // Config API
@@ -70,7 +65,10 @@ export const fetchAvailableBoards = async () => {
   return json.boards;
 };
 
-export const postConfig = async (config: { hostname?: string; board?: string }) => {
+export const postConfig = async (config: {
+  hostname?: string;
+  board?: string;
+}) => {
   const response = await fetch('/api/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

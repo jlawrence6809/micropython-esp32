@@ -143,8 +143,9 @@ export const RelayControls = () => {
 
             const isAuto = config.auto;
             const isOn = config.value;
+            const hasError = config.last_error != null;
 
-            const stateClasses = `${isAuto ? 'auto' : 'manual'} ${isOn ? 'on' : 'off'} ${isLoading ? 'loading' : ''}`;
+            const stateClasses = `${isAuto ? 'auto' : 'manual'} ${isOn ? 'on' : 'off'} ${isLoading ? 'loading' : ''} ${hasError ? 'error' : ''}`;
 
             return (
               <div
@@ -154,6 +155,7 @@ export const RelayControls = () => {
                   !isLoading &&
                   updateRelayProperty(label, getNextRelayState(config))
                 }
+                title={hasError ? `Error: ${config.last_error}` : ''}
               >
                 <div
                   className={'AutomateButton'}
@@ -167,7 +169,10 @@ export const RelayControls = () => {
                 {isLoading ? (
                   <span style={{ opacity: 0.7 }}>⏳ {label}</span>
                 ) : (
-                  label
+                  <>
+                    {label}
+                    {hasError && <span style={{ marginLeft: '0.5rem', color: '#ff6b6b' }}>⚠️</span>}
+                  </>
                 )}
               </div>
             );
@@ -194,6 +199,11 @@ export const RelayControls = () => {
                 relayConfigs.find(
                   (config) => config.label === automateDialogRelay,
                 )?.rule || '["NOP"]'
+              }
+              lastError={
+                relayConfigs.find(
+                  (config) => config.label === automateDialogRelay,
+                )?.last_error || null
               }
               onLabelChange={async (newLabel: string) =>
                 updateRelayProperty(automateDialogRelay, {

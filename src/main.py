@@ -39,7 +39,10 @@ async def automation_loop():
                 
                 try:
                     # Evaluate the rule
-                    result = instances.rules.evaluate_safe(rule, default=relay.get('value', False))
+                    result = instances.rules.evaluate(rule)
+                    
+                    # Clear any previous error on success
+                    instances.relays.clear_relay_error(label)
                     
                     # Update relay state if changed
                     if result != relay.get('value'):
@@ -48,7 +51,10 @@ async def automation_loop():
                         instances.relays.set_relay_by_label(label, result, keep_auto=True)
                     
                 except Exception as e:
-                    print(f"Error evaluating rule for '{label}': {e}")
+                    # Store error in relay state for UI display
+                    error_msg = str(e)
+                    instances.relays.set_relay_error(label, error_msg)
+                    print(f"Error evaluating rule for '{label}': {error_msg}")
                     # Keep current state on error
             
         except Exception as e:

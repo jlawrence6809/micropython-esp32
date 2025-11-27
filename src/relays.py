@@ -26,6 +26,10 @@ class RelayManager:
                     # Initialize auto mode from defaultAuto if not present
                     if 'auto' not in relay:
                         relay['auto'] = relay.get('defaultAuto', False)
+                    
+                    # Initialize error tracking
+                    if 'last_error' not in relay:
+                        relay['last_error'] = None
                             
         except (OSError, ValueError):
             print("No relay config found, using default empty config.")
@@ -108,6 +112,8 @@ class RelayManager:
                 relay['value'] = False
             if 'auto' not in relay:
                 relay['auto'] = False
+            if 'last_error' not in relay:
+                relay['last_error'] = None
                 
         self.save_config()
         self._setup_pins()  # Re-configure pins with new values
@@ -147,3 +153,24 @@ class RelayManager:
             if relay.get('label') == label:
                 return relay
         return None
+    
+    def set_relay_error(self, label, error_message):
+        """Set error message for a relay by its label.
+        
+        Args:
+            label: Relay label to find
+            error_message: Error message string or None to clear
+        """
+        for relay in self.relays:
+            if relay.get('label') == label:
+                relay['last_error'] = error_message
+                return True
+        return False
+    
+    def clear_relay_error(self, label):
+        """Clear error message for a relay by its label.
+        
+        Args:
+            label: Relay label to find
+        """
+        return self.set_relay_error(label, None)

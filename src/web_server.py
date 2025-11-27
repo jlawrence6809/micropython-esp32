@@ -217,6 +217,47 @@ class WebServer:
             self._send_json(writer, sensor_data)
             await writer.drain()
 
+        # --- Validate Rule ---
+        elif path == '/api/validate-rule' and method == 'POST':
+            try:
+                # Get rule code from body (strip quotes if present)
+                rule_code = body.decode('utf-8').strip()
+                if rule_code.startswith('"') and rule_code.endswith('"'):
+                    rule_code = rule_code[1:-1]
+                
+                # Step 1: Validate syntax
+                valid, error = instances.rules.validate(rule_code)
+                
+                if not valid:
+                    response = {
+                        'success': False,
+                        'error': error
+                    }
+                    self._send_json(writer, response)
+                else:
+                    # Step 2: Test-execute with current sensor values
+                    try:
+                        result = instances.rules.evaluate(rule_code)
+                        response = {
+                            'success': True,
+                            'message': f'Rule is valid and evaluates to: {result}'
+                        }
+                        self._send_json(writer, response)
+                    except Exception as e:
+                        # Catch runtime errors (undefined functions, type errors, etc.)
+                        response = {
+                            'success': False,
+                            'error': f'Runtime error: {str(e)}'
+                        }
+                        self._send_json(writer, response)
+            except Exception as e:
+                response = {
+                    'success': False,
+                    'error': f'Validation error: {str(e)}'
+                }
+                self._send_json(writer, response)
+            await writer.drain()
+
         # --- Storage Info ---
         elif path == '/api/storage' and method == 'GET':
             try:

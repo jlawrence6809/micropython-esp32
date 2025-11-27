@@ -6,6 +6,7 @@ type AutomateDialogProps = {
   isOpen: boolean;
   label: string;
   initialRule: string;
+  lastError?: string | null;
   onLabelChange: (newLabel: string) => Promise<void>;
   onRuleSubmit: (rule: string) => Promise<void>;
   onClose: () => void;
@@ -15,15 +16,16 @@ export const AutomateDialog = ({
   isOpen,
   label,
   initialRule,
+  lastError,
   onLabelChange,
   onRuleSubmit,
   onClose,
 }: AutomateDialogProps) => {
   const [rule, setRule] = useState<string>(initialRule);
-  const [validationResult, setValidationResult] = useState<ValidationResponse | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<ValidationResponse | null>(null);
   const [validating, setValidating] = useState<boolean>(false);
-  const submitDisabled =
-    !validationResult || !validationResult.success;
+  const submitDisabled = !validationResult || !validationResult.success;
 
   // Update rule when dialog opens with new data
   useEffect(() => {
@@ -73,10 +75,7 @@ export const AutomateDialog = ({
       console.error('Validation error:', error);
       setValidationResult({
         success: false,
-        error: {
-          message: `Network error: ${error.message}`,
-          path: []
-        }
+        error: `Network error: ${error.message}`,
       });
     } finally {
       setValidating(false);
@@ -118,16 +117,34 @@ export const AutomateDialog = ({
             <h4>Validation Result</h4>
             {validationResult.success ? (
               <div style={{ color: 'green' }}>
-                ✅ Rule is valid (returns type {validationResult.returnType})
+                ✅ {validationResult.message || 'Rule is valid'}
               </div>
             ) : (
-              <div style={{ color: 'red' }}>
-                ❌ {validationResult.error?.message}
-                {validationResult.error?.path?.length > 0 && (
-                  <div>Path: [{validationResult.error.path.join(', ')}]</div>
-                )}
-              </div>
+              <div style={{ color: 'red' }}>❌ {validationResult.error}</div>
             )}
+          </div>
+        )}
+
+        {/* display runtime error from automation loop */}
+        {lastError && (
+          <div style={{ marginTop: '1rem' }}>
+            <h4>Runtime Error</h4>
+            <div
+              style={{
+                color: 'red',
+                padding: '0.5rem',
+                backgroundColor: '#ffe0e0',
+                borderRadius: '4px',
+              }}
+            >
+              ⚠️ {lastError}
+            </div>
+            <div
+              style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: '#666' }}
+            >
+              This error occurred during the last rule evaluation in the
+              automation loop.
+            </div>
           </div>
         )}
 
