@@ -86,12 +86,20 @@ class SystemStatus:
                 info.append(('Current Time', instances.time_sync.get_time_string()))
                 info.append(('Current Date', instances.time_sync.get_date_string()))
                 
-                # Show timezone
+                # Show timezone with name
+                tz_name = instances.config.get_timezone_name()
                 offset_hours = instances.time_sync.TIMEZONE_OFFSET // 3600
-                if offset_hours != 0:
-                    info.append(('Timezone', f"UTC{offset_hours:+d}"))
+                offset_minutes = abs(instances.time_sync.TIMEZONE_OFFSET % 3600) // 60
+                
+                if offset_minutes != 0:
+                    # Show minutes if not a full hour offset
+                    tz_display = f"{tz_name} (UTC{offset_hours:+d}:{offset_minutes:02d})"
+                elif offset_hours != 0:
+                    tz_display = f"{tz_name} (UTC{offset_hours:+d})"
                 else:
-                    info.append(('Timezone', 'UTC'))
+                    tz_display = f"{tz_name} (UTC)"
+                
+                info.append(('Timezone', tz_display))
             else:
                 info.append(('Time Status', 'Not synced'))
         else:

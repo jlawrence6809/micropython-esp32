@@ -18,6 +18,28 @@ def setup_wifi():
         instances.time_sync.sync()
         print("=" * 50)
         
+        # Detect timezone with exponential backoff retries
+        print("=" * 50)
+        tz_info = instances.time_sync.detect_timezone()
+        if tz_info:
+            # Save to config
+            instances.config.set_timezone(
+                tz_info["timezone"],
+                tz_info["utc_offset_seconds"]
+            )
+            instances.config.save_config()
+            
+            # Apply to time_sync
+            instances.time_sync.TIMEZONE_OFFSET = tz_info["utc_offset_seconds"]
+        else:
+            print("⚠ Timezone detection failed, using saved config")
+            # Load from config
+            offset = instances.config.get_timezone_offset_seconds()
+            instances.time_sync.TIMEZONE_OFFSET = offset
+            tz_name = instances.config.get_timezone_name()
+            print(f"Timezone: {tz_name} (UTC{offset/3600:+.1f})")
+        print("=" * 50)
+        
         # Start WebREPL if in station mode
         try:
             import webrepl

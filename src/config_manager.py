@@ -26,7 +26,11 @@ class ConfigManager:
                 "password": None
             },
             "hostname": "esp32",
-            "board": "unconfigured.json"
+            "board": "unconfigured.json",
+            "timezone": {
+                "name": "UTC",
+                "offset_seconds": 0
+            }
         }
     
     def save_config(self):
@@ -102,6 +106,27 @@ class ConfigManager:
         # Remove old board_config if it exists
         if 'board_config' in self.data:
             del self.data['board_config']
+    
+    # Timezone methods
+    def get_timezone_offset_seconds(self):
+        """Get timezone offset in seconds from UTC."""
+        return self.data.get('timezone', {}).get('offset_seconds', 0)
+    
+    def get_timezone_name(self):
+        """Get timezone name (e.g., 'America/Los_Angeles')."""
+        return self.data.get('timezone', {}).get('name', 'UTC')
+    
+    def set_timezone(self, name, offset_seconds):
+        """Set timezone configuration.
+        
+        Args:
+            name: Timezone name (e.g., 'America/Los_Angeles')
+            offset_seconds: Offset from UTC in seconds
+        """
+        self.data['timezone'] = {
+            "name": name,
+            "offset_seconds": offset_seconds
+        }
     
     def get_all(self):
         """Get all configuration as dict."""

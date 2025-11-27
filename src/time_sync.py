@@ -3,6 +3,8 @@
 import ntptime
 import time
 from machine import RTC
+import urequests
+import ujson
 
 class TimeSync:
     """Manages NTP time synchronization."""
@@ -32,6 +34,76 @@ class TimeSync:
             set_timezone(1)   # CET (UTC+1)
         """
         self.TIMEZONE_OFFSET = offset_hours * 3600
+    
+    def detect_timezone(self, max_retries=3, initial_delay=0.5):
+        """Detect timezone automatically using IP geolocation with exponential backoff.
+        
+        Uses WorldTimeAPI.org to determine timezone based on IP address.
+        Retries with exponential backoff: 0.5s, 1s, 2s (total ~3.5s)
+        
+        Args:
+            max_retries: Maximum number of retry attempts (default 3)
+            initial_delay: Initial delay in seconds (default 0.5)
+        
+        Returns:
+            Dict with timezone info on success, None on failure:
+            {
+                "timezone": "America/Los_Angeles",
+                "utc_offset_seconds": -28800,
+                "utc_offset_hours": -8.0
+            }
+        """
+        if urequests is None or ujson is None:
+            print("⚠ urequests/ujson not available, cannot detect timezone")
+            return None
+        
+        delay = initial_delay
+        
+        for attempt in range(max_retries):
+            try:
+                if attempt == 0:
+                    print("Detecting timezone via WorldTimeAPI.org...")
+                else:
+                    print(f"Retry {attempt}/{max_retries-1} after {delay}s delay...")
+                    time.sleep(delay)
+                
+                response = urequests.get("http://worldtimeapi.org/api/ip", timeout=10)
+                
+                if response.status_code == 200:
+                    data = ujson.loads(response.text)
+                    response.close()
+                    
+                    timezone_name = data.get("timezone", "Unknown")
+                    utc_offset_str = data.get("utc_offset", "+00:00")  # Format: "+08:00" or "-05:00"
+                    
+                    # Parse UTC offset (format: +HH:MM or -HH:MM)
+                    sign = 1 if utc_offset_str[0] == '+' else -1
+                    hours = int(utc_offset_str[1:3])
+                    minutes = int(utc_offset_str[4:6])
+                    utc_offset_seconds = sign * (hours * 3600 + minutes * 60)
+                    utc_offset_hours = utc_offset_seconds / 3600
+                    
+                    result = {
+                        "timezone": timezone_name,
+                        "utc_offset_seconds": utc_offset_seconds,
+                        "utc_offset_hours": utc_offset_hours
+                    }
+                    
+                    print(f"✓ Detected timezone: {timezone_name} (UTC{utc_offset_hours:+.1f})")
+                    return result
+                else:
+                    print(f"⚠ WorldTimeAPI returned status {response.status_code}")
+                    response.close()
+                    
+            except Exception as e:
+                print(f"⚠ Attempt {attempt + 1} failed: {e}")
+            
+            # Exponential backoff for next retry
+            delay *= 2
+        
+        print("⚠ Failed to detect timezone after all retries")
+        return None
+    
     
     def sync(self, retry_count=3):
         """Synchronize time with NTP server.
