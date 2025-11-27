@@ -1,13 +1,69 @@
 import { RelayConfigDto, RelayConfig } from './types';
 
+// ============================================================================
+// Request Queue & Deduplication
+// ============================================================================
+
+// Global request queue - ensures sequential API calls
+let requestQueue: Promise<any> = Promise.resolve();
+
+// In-flight request tracking - prevents duplicate requests
+const inFlightRequests = new Map<string, Promise<any>>();
+
+/**
+ * Queued fetch with deduplication.
+ * - Prevents duplicate concurrent requests to same endpoint
+ * - Spaces out requests by 100ms to avoid overwhelming ESP32
+ */
+async function queuedFetch(
+  url: string,
+  options?: RequestInit,
+): Promise<Response> {
+  // Create unique key for this request
+  const key = `${url}:${JSON.stringify(options || {})}`;
+
+  // Deduplication: if same request is already in-flight, return that promise
+  if (inFlightRequests.has(key)) {
+    return await inFlightRequests.get(key);
+  }
+
+  // Add to queue - chain to previous request completion
+  const promise = requestQueue.then(async () => {
+    // 100ms delay before this request
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Execute the actual fetch
+    const response = await fetch(url, options);
+    return response;
+  });
+
+  // Update queue to this request's completion (catch errors so queue continues)
+  requestQueue = promise.catch(() => {});
+  inFlightRequests.set(key, promise);
+
+  try {
+    return await promise;
+  } catch (error) {
+    console.error(`[queuedFetch] Fetch error: ${key}`, error);
+    throw error;
+  } finally {
+    // Clean up after request completes
+    inFlightRequests.delete(key);
+  }
+}
+
+// ============================================================================
+// API Functions
+// ============================================================================
+
 export const fetchRelayConfig = async () => {
-  const data = await fetch('/api/relays/config');
+  const data = await queuedFetch('/api/relays/config');
   const json: RelayConfigDto = await data.json();
   return json;
 };
 
 export const fetchGpioOptions = async () => {
-  const data = await fetch('/api/gpio/available');
+  const data = await queuedFetch('/api/gpio/available');
   const json = await data.json();
   const options = Object.keys(json).map((k) => parseInt(k, 10));
   return options;
@@ -19,7 +75,7 @@ export const postRelayConfig = async (updatedConfigs: RelayConfig[]) => {
     relays: updatedConfigs,
   };
 
-  const response = await fetch('/api/relays/config', {
+  const response = await queuedFetch('/api/relays/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(config),
@@ -38,7 +94,7 @@ export interface ValidationResponse {
 export const validateRule = async (
   rule: string,
 ): Promise<ValidationResponse> => {
-  const response = await fetch('/api/validate-rule', {
+  const response = await queuedFetch('/api/validate-rule', {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: rule,
@@ -55,12 +111,12 @@ export const validateRule = async (
 
 // Config API
 export const fetchConfig = async () => {
-  const response = await fetch('/api/config');
+  const response = await queuedFetch('/api/config');
   return await response.json();
 };
 
 export const fetchAvailableBoards = async () => {
-  const response = await fetch('/api/boards');
+  const response = await queuedFetch('/api/boards');
   const json = await response.json();
   return json.boards;
 };
@@ -69,7 +125,7 @@ export const postConfig = async (config: {
   hostname?: string;
   board?: string;
 }) => {
-  const response = await fetch('/api/config', {
+  const response = await queuedFetch('/api/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(config),
@@ -79,24 +135,24 @@ export const postConfig = async (config: {
 
 // Status API
 export const fetchStatus = async () => {
-  const response = await fetch('/api/status');
+  const response = await queuedFetch('/api/status');
   return await response.json();
 };
 
 // Sensor API
 export const fetchSensors = async () => {
-  const response = await fetch('/api/sensors');
+  const response = await queuedFetch('/api/sensors');
   return await response.json();
 };
 
 // WiFi API
 export const fetchWifiStatus = async () => {
-  const response = await fetch('/api/wifi/status');
+  const response = await queuedFetch('/api/wifi/status');
   return await response.json();
 };
 
 export const fetchWifiScan = async () => {
-  const response = await fetch('/api/wifi/scan');
+  const response = await queuedFetch('/api/wifi/scan');
   const data = await response.json();
   return data.networks || [];
 };
@@ -106,7 +162,7 @@ export const postWifiConnect = async (
   password: string,
   save: boolean = true,
 ) => {
-  const response = await fetch('/api/wifi/connect', {
+  const response = await queuedFetch('/api/wifi/connect', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ssid, password, save }),
@@ -116,6 +172,6 @@ export const postWifiConnect = async (
 
 // System API
 export const postRestart = async () => {
-  const response = await fetch('/api/restart', { method: 'POST' });
+  const response = await queuedFetch('/api/restart', { method: 'POST' });
   return await response.json();
 };
