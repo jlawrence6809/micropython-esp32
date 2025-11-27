@@ -1,0 +1,1 @@
+./scripts/remote.sh exec "import machine; machine.reset()"

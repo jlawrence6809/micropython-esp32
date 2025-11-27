@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Section } from '../components/Section';
-import { AutomateDialog } from '../components/AutomateDialog';
-import { AddRelayDialog } from '../components/AddRelayDialog';
+import { RelayDialog } from '../components/RelayDialog';
 import { Relay, RelayConfig } from '../types';
 import { fetchGpioOptions, fetchRelayConfig, postRelayConfig } from '../api';
 
@@ -42,10 +41,9 @@ export const RelayControls = () => {
   );
   const [updatingRelay, setUpdatingRelay] = useState<string | null>(null);
 
-  const [automateDialogRelay, setAutomateDialogRelay] = useState<Relay | null>(
-    null,
-  );
-  const [addDialogOpen, setAddDialogOpen] = useState<boolean>(false);
+  const [editingRelay, setEditingRelay] = useState<Relay | null>(null);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
   useEffect(() => {
     fetchRelayConfig().then((json) => {
@@ -109,20 +107,49 @@ export const RelayControls = () => {
     setUpdatingRelay(null);
   };
 
-  const addRelay = async (newRelay: Omit<RelayConfig, 'value' | 'auto'>) => {
+  const handleDialogSubmit = async (config: Partial<RelayConfig>) => {
     if (relayConfigs === 'loading') return;
 
-    // Create new relay config with runtime state initialized from defaults
-    const relayPayload: RelayConfig = {
-      ...newRelay,
-      value: newRelay.defaultValue,
-      auto: newRelay.defaultAuto,
-    };
+    if (dialogMode === 'create') {
+      // Create new relay config with runtime state initialized from defaults
+      const relayPayload: RelayConfig = {
+        pin: config.pin!,
+        label: config.label!,
+        isInverted: config.isInverted!,
+        defaultValue: config.defaultValue!,
+        defaultAuto: config.defaultAuto!,
+        rule: config.rule!,
+        value: config.defaultValue!,
+        auto: config.defaultAuto!,
+        last_error: null,
+      };
 
-    // Add to existing config
-    const updatedConfigs = [...relayConfigs, relayPayload];
-    await updateEntireConfig(updatedConfigs);
-    await refreshGpioOptions();
+      // Add to existing config
+      const updatedConfigs = [...relayConfigs, relayPayload];
+      await updateEntireConfig(updatedConfigs);
+      await refreshGpioOptions();
+    } else {
+      // Edit mode - update existing relay
+      if (!editingRelay) return;
+      await updateRelayProperty(editingRelay, config);
+    }
+  };
+
+  const openCreateDialog = () => {
+    setDialogMode('create');
+    setEditingRelay(null);
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (relay: Relay) => {
+    setDialogMode('edit');
+    setEditingRelay(relay);
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditingRelay(null);
   };
 
   return (
@@ -161,7 +188,7 @@ export const RelayControls = () => {
                   className={'AutomateButton'}
                   onClick={(ev) => {
                     ev.stopPropagation();
-                    setAutomateDialogRelay(relay);
+                    openEditDialog(relay);
                   }}
                 >
                   ⛭
@@ -171,7 +198,11 @@ export const RelayControls = () => {
                 ) : (
                   <>
                     {label}
-                    {hasError && <span style={{ marginLeft: '0.5rem', color: '#ff6b6b' }}>⚠️</span>}
+                    {hasError && (
+                      <span style={{ marginLeft: '0.5rem', color: '#ff6b6b' }}>
+                        ⚠️
+                      </span>
+                    )}
                   </>
                 )}
               </div>
@@ -180,49 +211,31 @@ export const RelayControls = () => {
 
           <div style={{ marginTop: '1rem' }}>
             <button
-              onClick={() => setAddDialogOpen(true)}
+              onClick={openCreateDialog}
               style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}
             >
               + Add Relay
             </button>
           </div>
 
-          {automateDialogRelay && (
-            <AutomateDialog
+          {dialogOpen && (
+            <RelayDialog
               isOpen={true}
-              label={
-                relayConfigs.find(
-                  (config) => config.label === automateDialogRelay,
-                )?.label || ''
-              }
-              initialRule={
-                relayConfigs.find(
-                  (config) => config.label === automateDialogRelay,
-                )?.rule || '["NOP"]'
+              mode={dialogMode}
+              gpioOptions={gpioOptions === 'loading' ? [] : gpioOptions}
+              initialConfig={
+                editingRelay
+                  ? relayConfigs.find((c) => c.label === editingRelay)
+                  : undefined
               }
               lastError={
-                relayConfigs.find(
-                  (config) => config.label === automateDialogRelay,
-                )?.last_error || null
+                editingRelay
+                  ? relayConfigs.find((c) => c.label === editingRelay)
+                      ?.last_error || null
+                  : null
               }
-              onLabelChange={async (newLabel: string) =>
-                updateRelayProperty(automateDialogRelay, {
-                  label: newLabel,
-                })
-              }
-              onRuleSubmit={async (rule: string) => {
-                updateRelayProperty(automateDialogRelay, { rule });
-              }}
-              onClose={() => setAutomateDialogRelay(null)}
-            />
-          )}
-
-          {addDialogOpen && (
-            <AddRelayDialog
-              isOpen={true}
-              gpioOptions={gpioOptions === 'loading' ? [] : gpioOptions}
-              onSubmit={addRelay}
-              onClose={() => setAddDialogOpen(false)}
+              onSubmit={handleDialogSubmit}
+              onClose={closeDialog}
             />
           )}
         </>
