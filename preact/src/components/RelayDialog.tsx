@@ -2,6 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { validateRule, ValidationResponse } from '../api';
 import { FullScreenDialog } from './Dialog';
 import { RelayConfig } from '../types';
+import { RuleDocumentation } from './RuleDocumentation';
 
 type RelayDialogProps = {
   isOpen: boolean;
@@ -275,6 +276,8 @@ export const RelayDialog = ({
               placeholder="e.g., get_temperature() > 25"
               style={{ width: '100%', height: '150px', marginTop: '0.5rem' }}
             ></textarea>
+
+            <RuleDocumentation />
           </div>
         </div>
 
