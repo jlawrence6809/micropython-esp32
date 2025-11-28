@@ -100,7 +100,10 @@ export const RelayDialog = ({
       await onSubmit(config);
       onClose();
     } catch (error) {
-      console.error(`Error ${mode === 'create' ? 'adding' : 'updating'} relay:`, error);
+      console.error(
+        `Error ${mode === 'create' ? 'adding' : 'updating'} relay:`,
+        error,
+      );
       alert(`Failed to ${mode === 'create' ? 'add' : 'update'} relay`);
     } finally {
       setSubmitting(false);
@@ -146,9 +149,11 @@ export const RelayDialog = ({
                   GPIO {p}
                 </option>
               ))}
-              {mode === 'edit' && pin !== null && !gpioOptions.includes(pin) && (
-                <option value={pin}>GPIO {pin}</option>
-              )}
+              {mode === 'edit' &&
+                pin !== null &&
+                !gpioOptions.includes(pin) && (
+                  <option value={pin}>GPIO {pin}</option>
+                )}
             </select>
             {mode === 'edit' && (
               <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
@@ -246,6 +251,27 @@ export const RelayDialog = ({
             <textarea
               value={rule}
               onChange={(ev) => setRule(ev.currentTarget.value)}
+              onKeyDown={(ev) => {
+                // Allow Tab key to insert spaces instead of changing focus
+                if (ev.key === 'Tab') {
+                  ev.preventDefault();
+                  const target = ev.currentTarget;
+                  const start = target.selectionStart;
+                  const end = target.selectionEnd;
+                  const spaces = '  '; // 2 spaces (or use '\t' for tab character)
+
+                  // Insert spaces at cursor position
+                  const newValue =
+                    rule.substring(0, start) + spaces + rule.substring(end);
+                  setRule(newValue);
+
+                  // Move cursor after inserted spaces
+                  setTimeout(() => {
+                    target.selectionStart = target.selectionEnd =
+                      start + spaces.length;
+                  }, 0);
+                }
+              }}
               placeholder="e.g., get_temperature() > 25"
               style={{ width: '100%', height: '150px', marginTop: '0.5rem' }}
             ></textarea>
@@ -315,4 +341,3 @@ export const RelayDialog = ({
     </FullScreenDialog>
   );
 };
-

@@ -93,14 +93,17 @@ class RuleEngine:
     def validate(self, rule_code):
         """Validate a rule without executing it.
         
+        Supports both single-line expressions and multi-line statements.
+        
         Args:
-            rule_code: Python expression string
+            rule_code: Python code string (expression or statements)
             
         Returns:
             (valid, error_message) tuple
             
         Example:
             valid, error = engine.validate("get_temperature() > 25")
+            valid, error = engine.validate("temp = get_temperature()\ntemp > 25")
         """
         if not rule_code or not rule_code.strip():
             return False, "Rule is empty"
@@ -117,64 +120,113 @@ class RuleEngine:
             if keyword in rule_lower:
                 return False, f"Forbidden keyword: {keyword}"
         
-        # Try to compile it
+        # Try to compile as expression first (single line)
         try:
             compile(rule_code, '<rule>', 'eval')
             return True, None
-        except SyntaxError as e:
-            return False, f"Syntax error: {e}"
+        except SyntaxError:
+            # Not a valid expression, try as exec (multi-line)
+            try:
+                compile(rule_code, '<rule>', 'exec')
+                return True, None
+            except SyntaxError as e:
+                return False, f"Syntax error: {e}"
+            except Exception as e:
+                return False, f"Validation error: {e}"
         except Exception as e:
             return False, f"Validation error: {e}"
     
     def evaluate(self, rule_code):
         """Evaluate a rule and return the result.
         
+        Supports both single-line expressions and multi-line statements.
+        For multi-line rules, the last expression or a 'result' variable is returned.
+        
         Args:
-            rule_code: Python expression string
+            rule_code: Python code string (expression or statements)
             
         Returns:
-            Boolean result of the rule evaluation
+            Result of the rule evaluation (True, False, None, or other)
+            - True: Turn relay ON
+            - False: Turn relay OFF
+            - None (or anything else): Keep current state
             
         Raises:
             Exception: If rule evaluation fails
             
-        Example:
+        Examples:
+            # Single line
             result = engine.evaluate("get_temperature() > 25")
+            
+            # Multi-line with result variable
+            result = engine.evaluate('''
+temp = get_temperature()
+result = True if temp > 25 else None
+''')
+            
+            # Multi-line with last expression
+            result = engine.evaluate('''
+temp = get_temperature()
+True if temp > 25 else None
+''')
         """
         if not rule_code or not rule_code.strip():
-            return False
+            return None
         
         # Use cached compiled code if available
-        if rule_code not in self._compiled_cache:
+        cache_key = (rule_code, 'eval')
+        if cache_key not in self._compiled_cache:
             try:
-                self._compiled_cache[rule_code] = compile(rule_code, '<rule>', 'eval')
-            except Exception as e:
-                print(f"Rule compilation error: {e}")
-                raise
+                # Try to compile as expression first
+                self._compiled_cache[cache_key] = compile(rule_code, '<rule>', 'eval')
+            except SyntaxError:
+                # Not an expression, try as exec (multi-line)
+                cache_key = (rule_code, 'exec')
+                if cache_key not in self._compiled_cache:
+                    try:
+                        self._compiled_cache[cache_key] = compile(rule_code, '<rule>', 'exec')
+                    except Exception as e:
+                        print(f"Rule compilation error: {e}")
+                        raise
         
-        compiled_code = self._compiled_cache[rule_code]
+        compiled_code = self._compiled_cache[cache_key]
+        mode = cache_key[1]
         
         # Evaluate with restricted globals
         try:
-            result = eval(compiled_code, self._get_safe_globals(), {})
-            # Coerce to boolean
-            return bool(result)
+            safe_globals = self._get_safe_globals()
+            
+            if mode == 'eval':
+                # Single expression - return directly
+                result = eval(compiled_code, safe_globals, {})
+            else:
+                # Multi-line statements - use exec
+                local_vars = {}
+                exec(compiled_code, safe_globals, local_vars)
+                
+                # Return 'result' variable if it exists, otherwise None
+                result = local_vars.get('result', None)
+            
+            # Return as-is (True, False, None, or other)
+            # Don't coerce to boolean - let caller decide what to do with None
+            return result
+            
         except Exception as e:
             print(f"Rule evaluation error: {e}")
             raise
     
-    def evaluate_safe(self, rule_code, default=False):
+    def evaluate_safe(self, rule_code, default=None):
         """Evaluate a rule with exception handling.
         
         Args:
-            rule_code: Python expression string
-            default: Default value to return on error
+            rule_code: Python code string (expression or statements)
+            default: Default value to return on error (default: None = keep state)
             
         Returns:
-            Boolean result, or default on error
+            Result of rule evaluation (True/False/None), or default on error
             
         Example:
-            result = engine.evaluate_safe("get_temperature() > 25", default=False)
+            result = engine.evaluate_safe("get_temperature() > 25", default=None)
         """
         try:
             return self.evaluate(rule_code)

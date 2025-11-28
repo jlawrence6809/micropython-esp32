@@ -44,11 +44,16 @@ async def automation_loop():
                     # Clear any previous error on success
                     instances.relays.clear_relay_error(label)
                     
-                    # Update relay state if changed
-                    if result != relay.get('value'):
-                        print(f"Rule for '{label}': {rule} -> {result}")
-                        # Set relay state, keeping auto mode enabled
-                        instances.relays.set_relay_by_label(label, result, keep_auto=True)
+                    # Handle result:
+                    # - True: Turn ON
+                    # - False: Turn OFF
+                    # - None (or anything else): Keep current state
+                    if result is True or result is False:
+                        if result != relay.get('value'):
+                            print(f"Rule for '{label}': {rule} -> {result}")
+                            # Set relay state, keeping auto mode enabled
+                            instances.relays.set_relay_by_label(label, result, keep_auto=True)
+                    # else: result is None or other -> don't change state
                     
                 except Exception as e:
                     # Store error in relay state for UI display
