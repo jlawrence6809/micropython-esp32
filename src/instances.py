@@ -28,6 +28,7 @@ class InstanceManager:
         # Hardware control
         self.relays = None          # RelayManager instance
         self.sensors = None         # SensorManager instance
+        self.led = None             # BoardRgbLed instance
         
         # Automation
         self.rules = None           # RuleEngine instance
@@ -53,6 +54,7 @@ class InstanceManager:
         from rule_engine import RuleEngine
         from time_sync import TimeSync
         from web_server import WebServer
+        from board_rgb_led import BoardRgbLed
         
         # Initialize config manager
         self.config = ConfigManager()
@@ -74,6 +76,10 @@ class InstanceManager:
         # Initialize sensor manager
         self.sensors = SensorManager()
         print(f"✓ SensorManager initialized")
+        
+        # Initialize RGB LED
+        self.led = BoardRgbLed()
+        # LED starts in 'off' state, will be set to 'booting' in boot.py
         
         # Initialize time sync
         self.time_sync = TimeSync()
@@ -98,6 +104,7 @@ class InstanceManager:
         lines.append(f"  time_sync: {type(self.time_sync).__name__ if self.time_sync else 'Not initialized'}")
         lines.append(f"  relays:    {type(self.relays).__name__ if self.relays else 'Not initialized'}")
         lines.append(f"  sensors:   {type(self.sensors).__name__ if self.sensors else 'Not initialized'}")
+        lines.append(f"  led:       {type(self.led).__name__ if self.led else 'Not initialized'}")
         lines.append(f"  rules:     {type(self.rules).__name__ if self.rules else 'Not initialized'}")
         lines.append(f"  server:    {type(self.server).__name__ if self.server else 'Not initialized'}")
         return "\n".join(lines)

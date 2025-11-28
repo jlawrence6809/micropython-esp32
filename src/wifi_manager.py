@@ -45,6 +45,9 @@ class WiFiManager:
         
         print(f"Connecting to WiFi: {ssid}")
         
+        # Set LED to connecting state
+        instances.led.set_state('wifi_connecting')
+        
         # Activate station mode
         self.sta.active(True)
         
@@ -61,6 +64,7 @@ class WiFiManager:
         while not self.sta.isconnected():
             if time.time() - start > timeout:
                 print(f"WiFi connection timeout after {timeout}s")
+                instances.led.set_state('wifi_failed')
                 return False
             time.sleep(self.CONNECT_RETRY_DELAY)
             print(".", end="")
@@ -68,6 +72,9 @@ class WiFiManager:
         print()
         print(f"Connected! IP: {self.sta.ifconfig()[0]}")
         self.mode = 'sta'
+        
+        # Set LED to connected state
+        instances.led.set_state('wifi_connected')
         
         # Disable AP mode if it was active
         if self.ap.active():
@@ -94,6 +101,9 @@ class WiFiManager:
             password = self.AP_PASSWORD
         
         print(f"Starting AP mode: {ssid}")
+        
+        # Set LED to AP mode
+        instances.led.set_state('ap_mode')
         
         # Deactivate station mode
         if self.sta.active():

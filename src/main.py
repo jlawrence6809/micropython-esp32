@@ -15,6 +15,8 @@ async def automation_loop():
     """
     print("Starting automation loop...")
     
+    has_errors = False  # Track if any relay has errors
+    
     while True:
         try:
             # Update all sensors (throttled internally)
@@ -23,6 +25,9 @@ async def automation_loop():
             # Get current relay configurations
             relay_config = instances.relays.get_relays()
             relay_list = relay_config.get('relays', [])
+            
+            # Reset error flag for this iteration
+            has_errors = False
             
             # Evaluate rules for each relay in auto mode
             for relay in relay_list:
@@ -60,18 +65,30 @@ async def automation_loop():
                     error_msg = str(e)
                     instances.relays.set_relay_error(label, error_msg)
                     print(f"Error evaluating rule for '{label}': {error_msg}")
+                    has_errors = True
                     # Keep current state on error
+            
+            # Update LED based on error state
+            if has_errors:
+                instances.led.set_state('warning')  # Yellow blinking
+            else:
+                instances.led.set_state('normal')   # Green breathing
             
         except Exception as e:
             print(f"Error in automation loop: {e}")
             import sys
             sys.print_exception(e)
+            # Critical error - set LED to error state
+            instances.led.set_state('error')
         
         # Run every 1 second
         await asyncio.sleep(1)
 
 async def main():
     print("Starting main.py...")
+    
+    # Start RGB LED Manager
+    asyncio.create_task(instances.led.run())
     
     # Start Web Server (already initialized in instances)
     asyncio.create_task(instances.server.start())
@@ -80,6 +97,9 @@ async def main():
     asyncio.create_task(automation_loop())
     
     print("System started!")
+    
+    # Set LED to normal operation (green breathing)
+    instances.led.set_state('normal')
     
     # Main loop
     while True:

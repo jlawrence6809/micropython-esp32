@@ -4,8 +4,14 @@ from instances import instances
 # Initialize all singleton instances
 instances.initialize()
 
+# Set LED to booting state
+instances.led.set_state('booting')
+
 def setup_wifi():
     """Setup WiFi with AP fallback."""
+    
+    # Set LED to connecting state
+    instances.led.set_state('wifi_connecting')
     
     # WiFi manager handles everything: hostname, credentials, connection, mDNS
     mode, mdns_server = instances.wifi.setup_and_connect()
@@ -13,7 +19,11 @@ def setup_wifi():
     if mode == 'sta':
         print('WiFi connected successfully!')
         
+        # Set LED to connected state
+        instances.led.set_state('wifi_connected')
+        
         # Sync time with NTP server
+        instances.led.set_state('time_sync')
         print("=" * 50)
         instances.time_sync.sync()
         print("=" * 50)
@@ -48,6 +58,8 @@ def setup_wifi():
         except Exception as e:
             print(f'WebREPL failed to start: {e}')
     else:
+        # Set LED to AP mode
+        instances.led.set_state('ap_mode')
         hostname = instances.config.get_hostname()
         print(f'Running in AP mode - connect to "{hostname}-setup" to configure WiFi')
         print(f'AP IP: {instances.wifi.get_ip()}')
