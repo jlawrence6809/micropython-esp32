@@ -24,8 +24,11 @@ export const FullScreenDialog = ({
 }: FullScreenDialogProps) => {
   return (
     <DialogPortal>
-      <div className="FullScreenDialog" onClick={onClose}>
-        <div className="inner" onClick={(e) => e.stopPropagation()}>
+      <div className="FullScreenDialog">
+        <div className="inner">
+          <div className="close-button" onMouseDown={onClose}>
+            <span>❌</span>
+          </div>
           {children}
         </div>
       </div>

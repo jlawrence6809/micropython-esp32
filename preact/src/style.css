@@ -141,12 +141,19 @@ h1 {
   z-index: 100;
 }
 
-.FullScreenDialog.inner {
+.FullScreenDialog .inner {
+  position: relative;
+}
+
+.FullScreenDialog .close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+}
+.FullScreenDialog .close-button:hover {
   background-color: white;
-  padding: 1em;
-  max-width: 90%;
-  max-height: 90%;
-  overflow: auto;
+  border-radius: 2px;
 }
 
 hr {
@@ -201,7 +208,7 @@ label {
 .Settings button {
   padding: 10px 20px;
   font-size: 14px;
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
