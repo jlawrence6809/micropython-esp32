@@ -17,13 +17,13 @@
   },
   "default_sensor_pins": {
     "ds18b20": 38,
-    "dht22": 38,
     "photo_sensor": -1,
-    "light_switch": -1
+    "light_switch": 13,
+    "reset_switch": -1
   },
   "rgb_led": 48,
   "i2c": {
-    "scl": 1,
-    "sda": 2
+    "scl": -1,
+    "sda": -1
   }
 }
