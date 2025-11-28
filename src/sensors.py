@@ -2,118 +2,182 @@
 Sensor management module for reading hardware sensors.
 
 This module provides a unified interface for reading various sensors:
-- Temperature (DS18B20)
-- Humidity/Temperature (DHT22)
-- Light level (analog photo sensor)
+- Temperature/Humidity (AHT21 via I2C)
+- Light level (analog photo sensor) - not yet implemented
 - Switch state (digital input)
-
-For Phase 1, all sensors return dummy values for testing.
-Real hardware implementations will be added in Phase 2.
 """
 
 import time
+from machine import Pin
+from instances import instances
 
 class SensorManager:
     """Manages all sensor readings with caching and throttling."""
     
     def __init__(self):
         # Current sensor values
-        self.temperature = 22.0  # Celsius
-        self.humidity = 50.0     # Percentage
-        self.light_level = 500   # 0-4095 (ADC range)
+        self.temperature = None  # Celsius
+        self.humidity = None     # Percentage
+        self.light_level = 0     # 0-4095 (ADC range) - not implemented yet
         self.switch_state = False
+        self.reset_switch_state = False
         
         # Last sensor values (for edge detection)
-        self.last_temperature = 22.0
-        self.last_humidity = 50.0
-        self.last_light_level = 500
+        self.last_temperature = None
+        self.last_humidity = None
+        self.last_light_level = 0
         self.last_switch_state = False
+        self.last_reset_switch_state = False
         
         # Timestamps for throttling
-        self.last_temp_read = 0
-        self.last_humidity_read = 0
+        self.last_temp_humidity_read = 0
         self.last_light_read = 0
         self.last_switch_read = 0
         
         # Read intervals (milliseconds)
-        self.temp_interval = 2000      # 2 seconds
-        self.humidity_interval = 2000  # 2 seconds
-        self.light_interval = 10000    # 10 seconds
-        self.switch_interval = 100     # 100ms for debouncing
+        self.temp_humidity_interval = 2000  # 2 seconds (AHT21 reads both at once)
+        self.light_interval = 10000         # 10 seconds
+        self.switch_interval = 50           # 50ms for debouncing
         
+        # Hardware initialization
+        self.aht21 = None
+        self.light_switch_pin = None
+        self.reset_switch_pin = None
+        self._init_hardware()
+        
+    def _init_hardware(self):
+        """Initialize hardware sensors based on board configuration."""
+        try:
+            # Get sensor pins from board config
+            sensor_pins = instances.board.get_default_sensor_pins()
+            i2c_config = instances.board.get_i2c_config()
+            
+            # Initialize AHT21 (temperature/humidity sensor via I2C)
+            if i2c_config['scl'] != -1 and i2c_config['sda'] != -1:
+                try:
+                    from AHT21 import AHT21
+                    self.aht21 = AHT21(i2c_config['scl'], i2c_config['sda'])
+                    if self.aht21.Is_Calibrated():
+                        print("✓ AHT21 sensor initialized and calibrated")
+                    else:
+                        print("⚠ AHT21 sensor not calibrated")
+                        self.aht21 = None
+                except Exception as e:
+                    print(f"⚠ Failed to initialize AHT21: {e}")
+                    self.aht21 = None
+            
+            # Initialize light switch (digital input with pullup)
+            light_switch_pin = sensor_pins.get('light_switch', -1)
+            if light_switch_pin != -1:
+                try:
+                    self.light_switch_pin = Pin(light_switch_pin, Pin.IN, Pin.PULL_UP)
+                    print(f"✓ Light switch initialized on GPIO {light_switch_pin}")
+                except Exception as e:
+                    print(f"⚠ Failed to initialize light switch: {e}")
+                    self.light_switch_pin = None
+            
+            # Initialize reset switch (digital input with pullup)
+            reset_switch_pin = sensor_pins.get('reset_switch', -1)
+            if reset_switch_pin != -1:
+                try:
+                    self.reset_switch_pin = Pin(reset_switch_pin, Pin.IN, Pin.PULL_UP)
+                    print(f"✓ Reset switch initialized on GPIO {reset_switch_pin}")
+                except Exception as e:
+                    print(f"⚠ Failed to initialize reset switch: {e}")
+                    self.reset_switch_pin = None
+            
+        except Exception as e:
+            print(f"⚠ Error initializing sensors: {e}")
+    
     def update_all(self):
         """Update all sensors based on their intervals."""
         current_time = time.ticks_ms()
         
-        # Update temperature
-        if time.ticks_diff(current_time, self.last_temp_read) >= self.temp_interval:
+        # Update temperature and humidity (AHT21 reads both at once)
+        if time.ticks_diff(current_time, self.last_temp_humidity_read) >= self.temp_humidity_interval:
             self.last_temperature = self.temperature
-            self.temperature = self._read_temperature()
-            self.last_temp_read = current_time
-        
-        # Update humidity
-        if time.ticks_diff(current_time, self.last_humidity_read) >= self.humidity_interval:
             self.last_humidity = self.humidity
-            self.humidity = self._read_humidity()
-            self.last_humidity_read = current_time
+            temp, humidity = self._read_temp_humidity()
+            self.temperature = temp
+            self.humidity = humidity
+            self.last_temp_humidity_read = current_time
         
-        # Update light level
+        # Update light level (not implemented yet)
         if time.ticks_diff(current_time, self.last_light_read) >= self.light_interval:
             self.last_light_level = self.light_level
             self.light_level = self._read_light_level()
             self.last_light_read = current_time
         
-        # Update switch state
+        # Update switch states
         if time.ticks_diff(current_time, self.last_switch_read) >= self.switch_interval:
             self.last_switch_state = self.switch_state
+            self.last_reset_switch_state = self.reset_switch_state
             self.switch_state = self._read_switch_state()
+            self.reset_switch_state = self._read_reset_switch_state()
             self.last_switch_read = current_time
     
-    def _read_temperature(self):
-        """Read temperature from DS18B20 sensor.
+    def _read_temp_humidity(self):
+        """Read temperature and humidity from AHT21 sensor.
         
-        Phase 1: Returns dummy value.
-        Phase 2: Will read from actual hardware.
+        Returns:
+            Tuple of (temperature_celsius, humidity_percent)
         """
-        # Dummy: Simulate temperature varying slightly
-        import random
-        return 22.0 + random.uniform(-2.0, 2.0)
-    
-    def _read_humidity(self):
-        """Read humidity from DHT22 sensor.
-        
-        Phase 1: Returns dummy value.
-        Phase 2: Will read from actual hardware.
-        """
-        # Dummy: Simulate humidity varying slightly
-        import random
-        return 50.0 + random.uniform(-10.0, 10.0)
+        if self.aht21:
+            try:
+                temp = self.aht21.T()      # Returns temperature in Celsius
+                humidity = self.aht21.RH()  # Returns relative humidity %
+                return (temp, humidity)
+            except Exception as e:
+                print(f"⚠ Error reading AHT21: {e}")
+                # Return last known values on error
+                return (self.temperature if self.temperature is not None else 22.0,
+                        self.humidity if self.humidity is not None else 50.0)
+        else:
+            # No sensor available, return None
+            return (None, None)
     
     def _read_light_level(self):
         """Read light level from analog photo sensor.
         
-        Phase 1: Returns dummy value.
-        Phase 2: Will read from ADC.
+        Not yet implemented - returns 0.
         """
-        # Dummy: Simulate light varying
-        import random
-        return int(500 + random.uniform(-200, 200))
+        # TODO: Implement ADC reading for photo sensor
+        return 0
     
     def _read_switch_state(self):
-        """Read digital switch state.
+        """Read light switch state (active low with pullup).
         
-        Phase 1: Returns dummy value.
-        Phase 2: Will read from GPIO.
+        Returns True when switch is pressed (pin reads LOW).
         """
-        # Dummy: Keep same state for now
-        return self.switch_state
+        if self.light_switch_pin:
+            try:
+                # Pin is pulled up, so 0 = pressed, 1 = not pressed
+                return self.light_switch_pin.value() == 0
+            except Exception as e:
+                print(f"⚠ Error reading light switch: {e}")
+                return False
+        return False
+    
+    def _read_reset_switch_state(self):
+        """Read reset switch state (active low with pullup).
+        
+        Returns True when switch is pressed (pin reads LOW).
+        """
+        if self.reset_switch_pin:
+            try:
+                # Pin is pulled up, so 0 = pressed, 1 = not pressed
+                return self.reset_switch_pin.value() == 0
+            except Exception as e:
+                print(f"⚠ Error reading reset switch: {e}")
+                return False
+        return False
     
     def get_temperature(self):
-        """Get current temperature in Celsius."""
+        """Get current temperature in Celsius (or None if not available)."""
         return self.temperature
     
     def get_humidity(self):
-        """Get current humidity percentage."""
+        """Get current humidity percentage (or None if not available)."""
         return self.humidity
     
     def get_light_level(self):
@@ -121,8 +185,12 @@ class SensorManager:
         return self.light_level
     
     def get_switch_state(self):
-        """Get current switch state (True/False)."""
+        """Get current light switch state (True when pressed)."""
         return self.switch_state
+    
+    def get_reset_switch_state(self):
+        """Get current reset switch state (True when pressed)."""
+        return self.reset_switch_state
     
     def get_last_temperature(self):
         """Get previous temperature reading."""
@@ -137,8 +205,12 @@ class SensorManager:
         return self.last_light_level
     
     def get_last_switch_state(self):
-        """Get previous switch state."""
+        """Get previous light switch state."""
         return self.last_switch_state
+    
+    def get_last_reset_switch_state(self):
+        """Get previous reset switch state."""
+        return self.last_reset_switch_state
     
     def get_time_seconds(self):
         """Get current time as seconds since midnight.
@@ -161,6 +233,7 @@ class SensorManager:
             "humidity": self.humidity,
             "light_level": self.light_level,
             "switch_state": self.switch_state,
+            "reset_switch_state": self.reset_switch_state,
             "time_seconds": self.get_time_seconds()
         }
 

@@ -61,6 +61,7 @@ class RuleEngine:
             'get_humidity': instances.sensors.get_humidity,
             'get_light_level': instances.sensors.get_light_level,
             'get_switch_state': instances.sensors.get_switch_state,
+            'get_reset_switch_state': instances.sensors.get_reset_switch_state,
             'get_time': self.get_current_time_seconds,  # Use real time if available
             
             # Last values (for edge detection)
@@ -68,6 +69,7 @@ class RuleEngine:
             'get_last_humidity': instances.sensors.get_last_humidity,
             'get_last_light_level': instances.sensors.get_last_light_level,
             'get_last_switch_state': instances.sensors.get_last_switch_state,
+            'get_last_reset_switch_state': instances.sensors.get_last_reset_switch_state,
             
             # Time helper
             'time': self.time,
