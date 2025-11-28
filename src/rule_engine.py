@@ -70,6 +70,7 @@ class RuleEngine:
             'get_last_light_level': instances.sensors.get_last_light_level,
             'get_last_switch_state': instances.sensors.get_last_switch_state,
             'get_last_reset_switch_state': instances.sensors.get_last_reset_switch_state,
+            'get_last_time': instances.sensors.get_last_time,
             
             # Time helper
             'time': self.time,

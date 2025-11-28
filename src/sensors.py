@@ -28,6 +28,7 @@ class SensorManager:
         self.last_light_level = 0
         self.last_switch_state = False
         self.last_reset_switch_state = False
+        self.last_time_seconds = 0  # For time-based edge detection
         
         # Timestamps for throttling
         self.last_temp_humidity_read = 0
@@ -92,6 +93,9 @@ class SensorManager:
     def update_all(self):
         """Update all sensors based on their intervals."""
         current_time = time.ticks_ms()
+        
+        # Update time (always, for edge detection)
+        self.last_time_seconds = self.get_time_seconds()
         
         # Update temperature and humidity (AHT21 reads both at once)
         if time.ticks_diff(current_time, self.last_temp_humidity_read) >= self.temp_humidity_interval:
@@ -211,6 +215,13 @@ class SensorManager:
     def get_last_reset_switch_state(self):
         """Get previous reset switch state."""
         return self.last_reset_switch_state
+    
+    def get_last_time(self):
+        """Get previous time reading (seconds since midnight).
+        
+        Useful for detecting time-based edges (e.g., crossing 8 PM).
+        """
+        return self.last_time_seconds
     
     def get_time_seconds(self):
         """Get current time as seconds since midnight.
