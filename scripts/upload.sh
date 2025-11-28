@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Upload a Python file to MicroPython board
-# Usage: ./upload.sh <file.py> [destination] [port]
+# Usage: ./upload.sh <file.py> [destination]
 # Example: ./upload.sh my_script.py main.py
 
 # Resolve project root
@@ -9,7 +9,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_ROOT=$(dirname "$SCRIPT_DIR")
 
 if [ -z "$1" ]; then
-    echo "Usage: ./scripts/upload.sh <file.py> [destination] [port]"
+    echo "Usage: ./scripts/upload.sh <file.py> [destination]"
     echo ""
     echo "Examples:"
     echo "  ./scripts/upload.sh src/main.py            # Upload src/main.py as main.py"
@@ -25,37 +25,14 @@ fi
 
 DEST_FILE="${2:-$(basename "$SOURCE_FILE")}"  # Default to same filename
 
-
 # Check if source file exists
 if [ ! -f "$SOURCE_FILE" ]; then
     echo "Error: File not found: $SOURCE_FILE"
     exit 1
 fi
 
-# Auto-detect port if not provided
-if [ -n "$3" ]; then
-    PORT="$3"
-else
-    PORT=$(ls /dev/tty.usbmodem* 2>/dev/null | head -n 1)
-    if [ -z "$PORT" ]; then
-        PORT=$(ls /dev/tty.usbserial* /dev/ttyUSB* /dev/ttyACM* 2>/dev/null | head -n 1)
-    fi
-fi
-
-if [ -z "$PORT" ]; then
-    echo "Error: No USB device found"
-    exit 1
-fi
-
-# Check if mpremote is installed
-if ! command -v mpremote &> /dev/null; then
-    echo "Error: mpremote not found"
-    echo "Install with: pip install -r requirements.txt"
-    exit 1
-fi
-
 echo "Uploading $SOURCE_FILE to board as $DEST_FILE..."
-mpremote connect "$PORT" fs cp "$SOURCE_FILE" ":$DEST_FILE"
+"$SCRIPT_DIR/remote.sh" fs cp "$SOURCE_FILE" ":$DEST_FILE"
 echo "Done!"
 
 echo ""

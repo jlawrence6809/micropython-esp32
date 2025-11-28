@@ -59,7 +59,7 @@ echo "Flashing $FIRMWARE_FILE to $PORT..."
 echo ""
 
 # Erase and flash
-esptool.py --chip "$CHIP" --port "$PORT" erase_flash
+esptool.py --chip "$CHIP" --port "$PORT" erase-flash
 esptool.py --chip "$CHIP" --port "$PORT" --baud "$BAUD_RATE" write_flash -z 0 "$FIRMWARE_FILE"
 
 echo ""
