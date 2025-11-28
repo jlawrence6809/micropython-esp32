@@ -81,8 +81,8 @@ async def automation_loop():
             # Critical error - set LED to error state
             instances.led.set_state('error')
         
-        # Run every 1 second
-        await asyncio.sleep(1)
+        # Run every 0.5 second
+        await asyncio.sleep(0.5)
 
 async def main():
     print("Starting main.py...")
