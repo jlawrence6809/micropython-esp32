@@ -87,6 +87,10 @@ class BoardConfig:
     def get_i2c_config(self):
         """Get I2C pin configuration."""
         return self.config.get('i2c', {'scl': -1, 'sda': -1})
+
+    def get_rgb_led_pin(self):
+        """Get RGB LED pin configuration."""
+        return self.config.get('rgb_led', -1)
     
     def get_clock_speed(self):
         """Get recommended CPU clock speed in Hz (e.g., 240000000 for 240 MHz)."""
