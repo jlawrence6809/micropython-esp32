@@ -1,0 +1,29 @@
+{
+  "name": "ESP32-S3-ANTENNA-N16R8V",
+  "chip": "ESP32-S3",
+  "description": "ESP32-S3 DevKit with Antenna with 16MB Flash and 8MB PSRAM",
+  "reference_url": "http://wiki.fluidnc.com/en/hardware/ESP32-S3_Pin_Reference",
+  "clock_speed": 240000000,
+  "valid_gpio_pins": [
+    1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 38, 39, 40,
+    41, 42, 47, 48
+  ],
+  "reserved_pins": [0, 3, 19, 20, 35, 36, 37, 43, 44, 45, 46],
+  "notes": {
+    "pin_4": "Has weak pullup on reset",
+    "pins_19_20": "USB D-/D+",
+    "pins_35_36_37": "SPI flash/PSRAM",
+    "pins_43_44_45_46": "UART0 (USB Serial/JTAG)"
+  },
+  "default_sensor_pins": {
+    "ds18b20": 38,
+    "dht22": 38,
+    "photo_sensor": -1,
+    "light_switch": -1
+  },
+  "rgb_led": 48,
+  "i2c": {
+    "scl": 1,
+    "sda": 2
+  }
+}
