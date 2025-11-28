@@ -22,7 +22,7 @@
     "light_switch": -1
   },
   "i2c": {
-    "scl": 9,
-    "sda": 8
+    "scl": 1,
+    "sda": 2
   }
 }
