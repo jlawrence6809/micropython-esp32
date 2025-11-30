@@ -289,24 +289,21 @@ class WiFiManager:
                 - mdns_server: mDNS server instance (if in STA mode), None otherwise
         """
         hostname = instances.config.get_hostname()
+        # Set hostname before connecting
+        self.set_hostname(hostname)
         
         # Check if WiFi credentials are configured
         if not instances.config.get_wifi_ssid() or not instances.config.get_wifi_password():
             print('WiFi credentials not configured, starting AP mode...')
             self.start_ap_mode()
             print(f"Connect to '{hostname}-setup' network to configure WiFi")
-            return 'ap', None
+            mode = 'ap'
+        else:
+            # Try to connect with AP fallback
+            mode = self.connect_with_fallback()
         
-        # Set hostname before connecting
-        self.set_hostname(hostname)
-        
-        # Try to connect with AP fallback
-        mode = self.connect_with_fallback()
-        
-        # Setup mDNS if in station mode
-        mdns_server = None
-        if mode == 'sta':
-            mdns_server = self.setup_mdns(hostname)
+        # Setup mDNS (works in both STA and AP mode)
+        mdns_server = self.setup_mdns(hostname)
         
         return mode, mdns_server
 
