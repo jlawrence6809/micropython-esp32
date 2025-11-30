@@ -15,3 +15,5 @@ __pycache__/
 # config.py
 config.py
 config.json
+
+web_staging/
