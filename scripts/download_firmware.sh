@@ -9,8 +9,13 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_ROOT=$(dirname "$SCRIPT_DIR")
 
 FIRMWARE_DIR="$PROJECT_ROOT/firmware"
-FIRMWARE_URL="https://micropython.org/resources/firmware/ESP32_GENERIC_S3-20250911-v1.26.1.bin"
-FIRMWARE_FILE="ESP32_GENERIC_S3-20250911-v1.26.1.bin"
+# ESP32-S3
+# FIRMWARE_URL="https://micropython.org/resources/firmware/ESP32_GENERIC_S3-20250911-v1.26.1.bin"
+# FIRMWARE_FILE="ESP32_GENERIC_S3-20250911-v1.26.1.bin"
+
+# ESP32 (regular ESP32)
+FIRMWARE_URL="https://micropython.org/resources/firmware/ESP32_GENERIC-20250911-v1.26.1.bin"
+FIRMWARE_FILE="ESP32_GENERIC-20250911-v1.26.1.bin"
 
 mkdir -p "$FIRMWARE_DIR"
 cd "$FIRMWARE_DIR"
