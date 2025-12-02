@@ -71,8 +71,6 @@ async def automation_loop():
             # Update LED based on error state
             if has_errors:
                 instances.led.set_state('warning')  # Yellow blinking
-            else:
-                instances.led.set_state('normal')   # Green breathing
             
         except Exception as e:
             print(f"Error in automation loop: {e}")
@@ -97,9 +95,6 @@ async def main():
     asyncio.create_task(automation_loop())
     
     print("System started!")
-    
-    # Set LED to normal operation (green breathing)
-    instances.led.set_state('normal')
     
     # Main loop
     while True:

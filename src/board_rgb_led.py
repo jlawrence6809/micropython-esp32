@@ -8,16 +8,11 @@ class BoardRgbLed:
     
     # State definitions: (color, effect)
     STATES = {
-        'off': ((0, 0, 0), 'solid'),
         'booting': ((128, 0, 128), 'solid'),           # Purple - System initializing
-        'wifi_connecting': ((0, 0, 255), 'blink'),     # Blue blinking - Connecting to WiFi
-        'wifi_connected': ((0, 255, 0), 'solid'),      # Green solid - Connected successfully
-        'ap_mode': ((255, 165, 0), 'solid'),           # Orange - Hosting WiFi AP
-        'wifi_failed': ((255, 0, 0), 'blink'),         # Red blinking - Connection failed
+        'ap_mode': ((255, 165, 0), 'breathe'),         # Orange - Hosting WiFi AP
         'normal': ((0, 255, 0), 'breathe'),            # Green breathing - Normal operation
         'warning': ((255, 255, 0), 'blink'),           # Yellow blinking - Warning/error
         'error': ((255, 0, 0), 'solid'),               # Red solid - Critical error
-        'time_sync': ((0, 255, 255), 'solid'),         # Cyan - Time syncing
     }
     
     def __init__(self):

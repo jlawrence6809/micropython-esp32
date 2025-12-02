@@ -19,7 +19,8 @@ def setup_wifi():
     if mode == 'sta':
         print('WiFi connected successfully!')
         
-        # Set LED to connected state
+        # Set LED to normal state
+        instances.led.set_state('normal')
         
         # Sync time with NTP server
         print("=" * 50)
