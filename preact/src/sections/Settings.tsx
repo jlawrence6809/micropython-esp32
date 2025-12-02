@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Section } from '../components/Section';
-import { fetchConfig, fetchAvailableBoards, postConfig } from '../api';
+import {
+  fetchConfig,
+  fetchAvailableBoards,
+  postConfig,
+  postTimeSet,
+} from '../api';
 
 interface Board {
   filename: string;
@@ -20,6 +25,11 @@ export const Settings = () => {
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+
+  // Time setting state
+  const [timeHour, setTimeHour] = useState('12');
+  const [timeMinute, setTimeMinute] = useState('0');
+  const [settingTime, setSettingTime] = useState(false);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -87,6 +97,41 @@ export const Settings = () => {
     }
   };
 
+  const handleSetTime = async (e: Event) => {
+    e.preventDefault();
+    setSettingTime(true);
+    setMessage(null);
+
+    try {
+      const hour = parseInt(timeHour, 10);
+      const minute = parseInt(timeMinute, 10);
+
+      if (isNaN(hour) || isNaN(minute)) {
+        setMessage({ type: 'error', text: 'Invalid time values' });
+        return;
+      }
+
+      const result = await postTimeSet(hour, minute);
+
+      if (result.status === 'success') {
+        setMessage({
+          type: 'success',
+          text: `Time set to ${result.current_time}`,
+        });
+      } else {
+        setMessage({
+          type: 'error',
+          text: result.message || 'Failed to set time',
+        });
+      }
+    } catch (error) {
+      console.error('Set time error:', error);
+      setMessage({ type: 'error', text: 'Failed to set time' });
+    } finally {
+      setSettingTime(false);
+    }
+  };
+
   if (loading) {
     return <Section title="Settings">Loading...</Section>;
   }
@@ -137,6 +182,64 @@ export const Settings = () => {
         <button type="submit" disabled={saving}>
           {saving ? 'Saving...' : 'Save Configuration'}
         </button>
+      </form>
+
+      <hr
+        style={{
+          margin: '2rem 0',
+          border: 'none',
+          borderTop: '1px solid #333',
+        }}
+      />
+
+      <form onSubmit={handleSetTime}>
+        <h3>Manual Time Setting</h3>
+        <p style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '1rem' }}>
+          Use this to manually set the time when WiFi/NTP is unavailable (e.g.,
+          in AP mode). The time will be saved and used as a fallback on future
+          boots.
+        </p>
+
+        <div
+          className="FormGroup"
+          style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}
+        >
+          <div style={{ flex: 1 }}>
+            <label htmlFor="timeHour">
+              <strong>Hour (0-23):</strong>
+            </label>
+            <input
+              id="timeHour"
+              type="number"
+              min="0"
+              max="23"
+              value={timeHour}
+              onInput={(e) => setTimeHour((e.target as HTMLInputElement).value)}
+              required
+            />
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <label htmlFor="timeMinute">
+              <strong>Minute (0-59):</strong>
+            </label>
+            <input
+              id="timeMinute"
+              type="number"
+              min="0"
+              max="59"
+              value={timeMinute}
+              onInput={(e) =>
+                setTimeMinute((e.target as HTMLInputElement).value)
+              }
+              required
+            />
+          </div>
+
+          <button type="submit" disabled={settingTime} style={{ flex: 1 }}>
+            {settingTime ? 'Setting...' : 'Set Time'}
+          </button>
+        </div>
       </form>
     </Section>
   );

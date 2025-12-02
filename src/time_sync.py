@@ -105,11 +105,12 @@ class TimeSync:
         return None
     
     
-    def sync(self, retry_count=3):
+    def sync(self, retry_count=3, save_to_config=True):
         """Synchronize time with NTP server.
         
         Args:
             retry_count: Number of times to retry on failure
+            save_to_config: If True, save timestamp to config for fallback
             
         Returns:
             True if sync successful, False otherwise
@@ -128,6 +129,12 @@ class TimeSync:
                     # Mark as synced
                     self.is_synced = True
                     self.last_sync_time = time.time()
+                    
+                    # Save to config for fallback
+                    if save_to_config:
+                        from instances import instances
+                        instances.config.set_last_known_time(self.last_sync_time)
+                        instances.config.save_config()
                     
                     # Get current time
                     current_time = time.localtime()
@@ -230,6 +237,105 @@ class TimeSync:
         
         elapsed = time.time() - self.last_sync_time
         return elapsed > (interval_hours * 3600)
+    
+    def set_time_manual(self, hour, minute, save_to_config=True):
+        """Manually set the time (keeps current date).
+        
+        Args:
+            hour: Hour (0-23)
+            minute: Minute (0-59)
+            save_to_config: If True, save timestamp to config for fallback
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get current date
+            current = time.localtime()
+            
+            # Create new time tuple with updated hour/minute
+            # Format: (year, month, day, hour, minute, second, weekday, yearday)
+            new_time = (
+                current[0],  # year
+                current[1],  # month
+                current[2],  # day
+                hour,
+                minute,
+                0,           # second
+                current[6],  # weekday
+                current[7]   # yearday
+            )
+            
+            # Set RTC time
+            self.rtc.datetime((
+                new_time[0],  # year
+                new_time[1],  # month
+                new_time[2],  # day
+                new_time[6],  # weekday
+                new_time[3],  # hour
+                new_time[4],  # minute
+                new_time[5],  # second
+                0             # subseconds
+            ))
+            
+            # Mark as synced (manually)
+            self.is_synced = True
+            self.last_sync_time = time.time()
+            
+            # Save to config for fallback
+            if save_to_config:
+                from instances import instances
+                instances.config.set_last_known_time(self.last_sync_time)
+                instances.config.save_config()
+            
+            print(f"✓ Time set manually to {hour:02d}:{minute:02d}")
+            return True
+            
+        except Exception as e:
+            print(f"Failed to set time manually: {e}")
+            return False
+    
+    def restore_from_config(self):
+        """Restore time from last known time in config.
+        
+        Returns:
+            True if restored, False if no saved time available
+        """
+        try:
+            from instances import instances
+            last_known = instances.config.get_last_known_time()
+            
+            if last_known is None:
+                print("No saved time available in config")
+                return False
+            
+            # Calculate how long ago it was saved
+            # (This is approximate since we don't know current time yet)
+            print(f"Restoring time from last known timestamp: {last_known}")
+            
+            # Set system time to last known time
+            # Note: This will be slightly behind real time
+            time_tuple = time.localtime(last_known)
+            self.rtc.datetime((
+                time_tuple[0],  # year
+                time_tuple[1],  # month
+                time_tuple[2],  # day
+                time_tuple[6],  # weekday
+                time_tuple[3],  # hour
+                time_tuple[4],  # minute
+                time_tuple[5],  # second
+                0               # subseconds
+            ))
+            
+            self.is_synced = False  # Mark as not synced (it's stale)
+            self.last_sync_time = last_known
+            
+            print(f"⚠ Time restored from config (may be stale): {self.get_datetime_string()}")
+            return True
+            
+        except Exception as e:
+            print(f"Failed to restore time from config: {e}")
+            return False
     
     def get_status(self):
         """Get sync status information.

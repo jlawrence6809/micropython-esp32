@@ -175,3 +175,13 @@ export const postRestart = async () => {
   const response = await queuedFetch('/api/restart', { method: 'POST' });
   return await response.json();
 };
+
+// Time API
+export const postTimeSet = async (hour: number, minute: number) => {
+  const response = await queuedFetch('/api/time/set', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ hour, minute }),
+  });
+  return await response.json();
+};

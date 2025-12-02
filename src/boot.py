@@ -4,14 +4,14 @@ from instances import instances
 # Initialize all singleton instances
 instances.initialize()
 
+# Set CPU clock speed from board config
+instances.board.set_cpu_frequency()
+
 # Set LED to booting state
 instances.led.set_state('booting')
 
 def setup_wifi():
     """Setup WiFi with AP fallback."""
-    
-    # Set LED to connecting state
-    instances.led.set_state('wifi_connecting')
     
     # WiFi manager handles everything: hostname, credentials, connection, mDNS
     mode, mdns_server = instances.wifi.setup_and_connect()
@@ -20,12 +20,16 @@ def setup_wifi():
         print('WiFi connected successfully!')
         
         # Set LED to connected state
-        instances.led.set_state('wifi_connected')
         
         # Sync time with NTP server
-        instances.led.set_state('time_sync')
         print("=" * 50)
-        instances.time_sync.sync()
+        sync_success = instances.time_sync.sync()
+        
+        # If sync failed, try to restore from config
+        if not sync_success:
+            print("Attempting to restore time from last known value...")
+            instances.time_sync.restore_from_config()
+        
         print("=" * 50)
         
         # Detect timezone with exponential backoff retries
@@ -63,11 +67,14 @@ def setup_wifi():
         hostname = instances.config.get_hostname()
         print(f'Running in AP mode - connect to "{hostname}-setup" to configure WiFi')
         print(f'AP IP: {instances.wifi.get_ip()}')
+        
+        # In AP mode, try to restore time from config
+        print("=" * 50)
+        print("Attempting to restore time from last known value...")
+        instances.time_sync.restore_from_config()
+        print("=" * 50)
     
     return mdns_server
 
 # Setup WiFi on boot
 mdns_server = setup_wifi()
-
-# Set CPU clock speed from board config
-instances.board.set_cpu_frequency()

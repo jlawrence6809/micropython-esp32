@@ -128,6 +128,82 @@ class ConfigManager:
             "offset_seconds": offset_seconds
         }
     
+    # Time methods
+    def get_last_known_time(self):
+        """Get last known time (unix timestamp).
+        
+        Returns:
+            Unix timestamp or None if never set
+        """
+        return self.data.get('last_known_time')
+    
+    def set_last_known_time(self, timestamp):
+        """Save last known time (unix timestamp)."""
+        self.data['last_known_time'] = timestamp
+    
+    # Sensor pin methods
+    def _get_sensor_pins_defaults(self):
+        """Get default sensor pin configuration."""
+        return {
+            "i2c_scl": -1,
+            "i2c_sda": -1,
+            "ds18b20": -1,
+            "photo_sensor": -1,
+            "light_switch": -1,
+            "reset_switch": -1
+        }
+    
+    def get_sensor_pins(self):
+        """Get sensor pin configuration with defaults for missing keys."""
+        defaults = self._get_sensor_pins_defaults()
+        saved = self.data.get('sensor_pins', {})
+        # Merge saved values over defaults
+        return {**defaults, **saved}
+    
+    def get_sensor_pin(self, key):
+        """Get a specific sensor pin value.
+        
+        Args:
+            key: One of 'i2c_scl', 'i2c_sda', 'ds18b20', 'photo_sensor', 
+                 'light_switch', 'reset_switch'
+        
+        Returns:
+            Pin number or -1 if disabled
+        """
+        pins = self.get_sensor_pins()
+        return pins.get(key, -1)
+    
+    def set_sensor_pins(self, pins_dict):
+        """Set sensor pin configuration.
+        
+        Args:
+            pins_dict: Dictionary with sensor pin assignments
+                       e.g., {"i2c_scl": 1, "i2c_sda": 2, "ds18b20": 38}
+        
+        Returns:
+            True if valid, False otherwise
+        """
+        valid_keys = set(self._get_sensor_pins_defaults().keys())
+        
+        # Validate keys
+        for key in pins_dict.keys():
+            if key not in valid_keys:
+                print(f"Warning: Unknown sensor pin key: {key}")
+                return False
+        
+        # Validate values (must be integers)
+        for key, value in pins_dict.items():
+            if not isinstance(value, int):
+                print(f"Warning: Sensor pin value must be integer: {key}={value}")
+                return False
+        
+        # Merge with existing config
+        if 'sensor_pins' not in self.data:
+            self.data['sensor_pins'] = {}
+        
+        self.data['sensor_pins'].update(pins_dict)
+        return True
+    
     def get_all(self):
         """Get all configuration as dict."""
         return self.data.copy()

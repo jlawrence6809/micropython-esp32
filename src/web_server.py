@@ -41,6 +41,7 @@ class WebServer:
             ('GET', '/api/config'): self.api_config_get,
             ('POST', '/api/config'): self.api_config_post,
             ('GET', '/api/boards'): self.api_boards_get,
+            ('POST', '/api/time/set'): self.api_time_set_post,
         }
         
     async def start(self):
@@ -446,6 +447,37 @@ class WebServer:
             }
         else:
             raise Exception("Failed to save configuration")
+
+    async def api_time_set_post(self, writer, body):
+        """POST /api/time/set - Manually set system time."""
+        data = json.loads(body)
+        hour = data.get('hour')
+        minute = data.get('minute')
+        
+        # Validate inputs
+        if hour is None or minute is None:
+            raise ValueError("Both 'hour' and 'minute' are required")
+        
+        if not isinstance(hour, int) or not isinstance(minute, int):
+            raise ValueError("Hour and minute must be integers")
+        
+        if not (0 <= hour <= 23):
+            raise ValueError("Hour must be between 0 and 23")
+        
+        if not (0 <= minute <= 59):
+            raise ValueError("Minute must be between 0 and 59")
+        
+        # Set time
+        success = instances.time_sync.set_time_manual(hour, minute, save_to_config=True)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"Time set to {hour:02d}:{minute:02d}",
+                "current_time": instances.time_sync.get_time_string()
+            }
+        else:
+            raise Exception("Failed to set time")
 
     async def api_boards_get(self, writer, body):
         """GET /api/boards - Get list of available boards."""
