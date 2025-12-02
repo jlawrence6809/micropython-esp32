@@ -30,6 +30,14 @@ class ConfigManager:
             "timezone": {
                 "name": "UTC",
                 "offset_seconds": 0
+            },
+            "sensor_pins": {
+                "i2c_scl": -1,
+                "i2c_sda": -1,
+                "ds18b20": -1,
+                "photo_sensor": -1,
+                "light_switch": -1,
+                "reset_switch": -1
             }
         }
     
@@ -157,8 +165,11 @@ class ConfigManager:
         """Get sensor pin configuration with defaults for missing keys."""
         defaults = self._get_sensor_pins_defaults()
         saved = self.data.get('sensor_pins', {})
-        # Merge saved values over defaults
-        return {**defaults, **saved}
+        # Merge saved values over defaults (MicroPython compatible)
+        result = {}
+        for key in defaults:
+            result[key] = saved.get(key, defaults[key])
+        return result
     
     def get_sensor_pin(self, key):
         """Get a specific sensor pin value.

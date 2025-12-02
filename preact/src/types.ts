@@ -37,3 +37,36 @@ export type RelayConfigDto = {
   count: number;
   relays: RelayConfig[];
 };
+
+/**
+ * Sensor pin configuration
+ */
+export type SensorPins = {
+  i2c_scl: number;
+  i2c_sda: number;
+  ds18b20: number;
+  photo_sensor: number;
+  light_switch: number;
+  reset_switch: number;
+};
+
+/**
+ * Sensor configuration response from /api/sensor-config
+ */
+export type SensorConfigResponse = {
+  sensor_pins: SensorPins;
+  available_pins: number[];
+  adc1_pins: number[];
+};
+
+/**
+ * Sensor data response from /api/sensors
+ */
+export type SensorData = {
+  temperature: number | null;
+  humidity: number | null;
+  light_level: number | null;
+  switch_state: boolean;
+  reset_switch_state: boolean;
+  time_seconds: number;
+};

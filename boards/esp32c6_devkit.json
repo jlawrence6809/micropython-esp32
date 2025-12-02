@@ -7,8 +7,10 @@
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23
   ],
   "reserved_pins": [12, 13, 14, 15, 16, 17],
+  "adc1_pins": [0, 1, 2, 3, 4, 5, 6],
   "notes": {
-    "pins_12_17": "SPI flash pins - do not use"
+    "pins_12_17": "SPI flash pins - do not use",
+    "adc": "ADC1 (GPIO 0-6) works with WiFi."
   },
   "default_sensor_pins": {
     "ds18b20": -1,

@@ -5,6 +5,7 @@
   "clock_speed": null,
   "valid_gpio_pins": [],
   "reserved_pins": [],
+  "adc1_pins": [],
   "notes": {
     "warning": "Board not configured! Set 'board_config' in config.json to your actual board type."
   },

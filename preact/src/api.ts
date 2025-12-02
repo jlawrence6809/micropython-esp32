@@ -1,4 +1,10 @@
-import { RelayConfigDto, RelayConfig } from './types';
+import {
+  RelayConfigDto,
+  RelayConfig,
+  SensorConfigResponse,
+  SensorPins,
+  SensorData,
+} from './types';
 
 // ============================================================================
 // Request Queue & Deduplication
@@ -140,8 +146,30 @@ export const fetchStatus = async () => {
 };
 
 // Sensor API
-export const fetchSensors = async () => {
+export const fetchSensors = async (): Promise<SensorData> => {
   const response = await queuedFetch('/api/sensors');
+  return await response.json();
+};
+
+// Sensor Config API
+export const fetchSensorConfig = async (): Promise<SensorConfigResponse> => {
+  const response = await queuedFetch('/api/sensor-config');
+  return await response.json();
+};
+
+export const postSensorConfig = async (
+  sensorPins: Partial<SensorPins>,
+): Promise<{
+  status: string;
+  message: string;
+  restart_required: boolean;
+  sensor_pins: SensorPins;
+}> => {
+  const response = await queuedFetch('/api/sensor-config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sensor_pins: sensorPins }),
+  });
   return await response.json();
 };
 

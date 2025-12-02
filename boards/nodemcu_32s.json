@@ -8,11 +8,13 @@
   ],
   "reserved_pins": [0, 1, 3, 6, 7, 8, 9, 10, 11],
   "strapping_pins": [0, 2, 5, 12, 15],
+  "adc1_pins": [32, 33, 34, 35, 36, 37, 38, 39],
   "notes": {
     "pins_6_11": "SPI flash - do not use",
     "pin_0": "Boot button, strapping pin",
     "pin_2": "Onboard LED, strapping pin",
-    "pins_34_39": "Input only (ADC)"
+    "pins_34_39": "Input only (ADC)",
+    "adc": "ADC1 (GPIO 32-39) works with WiFi. ADC2 does not."
   },
   "default_sensor_pins": {
     "ds18b20": 23,

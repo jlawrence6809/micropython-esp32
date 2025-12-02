@@ -9,11 +9,13 @@
     41, 42, 47, 48
   ],
   "reserved_pins": [0, 3, 19, 20, 35, 36, 37, 43, 44, 45, 46],
+  "adc1_pins": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   "notes": {
     "pin_4": "Has weak pullup on reset",
     "pins_19_20": "USB D-/D+",
     "pins_35_36_37": "SPI flash/PSRAM",
-    "pins_43_44_45_46": "UART0 (USB Serial/JTAG)"
+    "pins_43_44_45_46": "UART0 (USB Serial/JTAG)",
+    "adc": "ADC1 (GPIO 1-10) works with WiFi. ADC2 (GPIO 11-20) does not."
   },
   "default_sensor_pins": {
     "ds18b20": 38,

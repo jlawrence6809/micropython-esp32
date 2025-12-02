@@ -87,6 +87,17 @@ class BoardConfig:
     def get_i2c_config(self):
         """Get I2C pin configuration."""
         return self.config.get('i2c', {'scl': -1, 'sda': -1})
+    
+    def get_adc1_pins(self):
+        """Get list of ADC1 pins (safe to use with WiFi active).
+        
+        ADC2 pins cannot be used when WiFi is active, so for analog
+        sensors (like photo sensors), only ADC1 pins should be offered.
+        
+        Returns:
+            List of ADC1-capable GPIO pin numbers
+        """
+        return self.config.get('adc1_pins', [])
 
     def get_rgb_led_pin(self):
         """Get RGB LED pin configuration."""

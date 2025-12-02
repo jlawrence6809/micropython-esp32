@@ -33,6 +33,8 @@ class WebServer:
             ('POST', '/api/relays/control'): self.api_relays_control_post,
             ('GET', '/api/gpio/available'): self.api_gpio_available_get,
             ('GET', '/api/sensors'): self.api_sensors_get,
+            ('GET', '/api/sensor-config'): self.api_sensor_config_get,
+            ('POST', '/api/sensor-config'): self.api_sensor_config_post,
             ('POST', '/api/validate-rule'): self.api_validate_rule_post,
             ('GET', '/api/storage'): self.api_storage_get,
             ('GET', '/api/wifi/scan'): self.api_wifi_scan_get,
@@ -319,6 +321,64 @@ class WebServer:
                 'success': False,
                 'error': f'Runtime error: {str(e)}'
             }
+
+    async def api_sensor_config_get(self, writer, body):
+        """GET /api/sensor-config - Get sensor pin configuration."""
+        sensor_pins = instances.config.get_sensor_pins()
+        
+        # Also return available pins and ADC1 pins for the UI
+        adc1_pins = instances.board.get_adc1_pins()
+        available_pins = instances.board.get_available_pins()
+        
+        return {
+            "sensor_pins": sensor_pins,
+            "available_pins": available_pins,
+            "adc1_pins": adc1_pins
+        }
+
+    async def api_sensor_config_post(self, writer, body):
+        """POST /api/sensor-config - Update sensor pin configuration.
+        
+        Expects JSON body with sensor_pins object:
+        {
+            "sensor_pins": {
+                "i2c_scl": 1,
+                "i2c_sda": 2,
+                "ds18b20": 38,
+                "photo_sensor": 3,
+                "light_switch": 13,
+                "reset_switch": -1
+            }
+        }
+        """
+        data = json.loads(body.decode())
+        sensor_pins = data.get('sensor_pins')
+        
+        if sensor_pins is None:
+            raise ValueError("Missing 'sensor_pins' in request body")
+        
+        if not isinstance(sensor_pins, dict):
+            raise ValueError("'sensor_pins' must be an object")
+        
+        # Validate all values are integers
+        for key, value in sensor_pins.items():
+            if not isinstance(value, int):
+                raise ValueError(f"Pin value for '{key}' must be an integer")
+        
+        # Update config
+        if not instances.config.set_sensor_pins(sensor_pins):
+            raise ValueError("Invalid sensor pin configuration")
+        
+        # Save to file
+        if not instances.config.save_config():
+            raise Exception("Failed to save configuration")
+        
+        return {
+            "status": "success",
+            "message": "Sensor configuration updated. Restart required for changes to take effect.",
+            "restart_required": True,
+            "sensor_pins": instances.config.get_sensor_pins()
+        }
 
     # ============================================================================
     # API Handlers - Storage
