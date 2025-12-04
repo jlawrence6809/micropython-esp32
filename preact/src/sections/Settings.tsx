@@ -31,6 +31,11 @@ export const Settings = () => {
   const [timeMinute, setTimeMinute] = useState('0');
   const [settingTime, setSettingTime] = useState(false);
 
+  const [timeMessage, setTimeMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
   useEffect(() => {
     const loadConfig = async () => {
       try {
@@ -100,33 +105,33 @@ export const Settings = () => {
   const handleSetTime = async (e: Event) => {
     e.preventDefault();
     setSettingTime(true);
-    setMessage(null);
+    setTimeMessage(null);
 
     try {
       const hour = parseInt(timeHour, 10);
       const minute = parseInt(timeMinute, 10);
 
       if (isNaN(hour) || isNaN(minute)) {
-        setMessage({ type: 'error', text: 'Invalid time values' });
+        setTimeMessage({ type: 'error', text: 'Invalid time values' });
         return;
       }
 
       const result = await postTimeSet(hour, minute);
 
       if (result.status === 'success') {
-        setMessage({
+        setTimeMessage({
           type: 'success',
           text: `Time set to ${result.current_time}`,
         });
       } else {
-        setMessage({
+        setTimeMessage({
           type: 'error',
           text: result.message || 'Failed to set time',
         });
       }
     } catch (error) {
       console.error('Set time error:', error);
-      setMessage({ type: 'error', text: 'Failed to set time' });
+      setTimeMessage({ type: 'error', text: 'Failed to set time' });
     } finally {
       setSettingTime(false);
     }
@@ -235,6 +240,10 @@ export const Settings = () => {
               required
             />
           </div>
+
+          {timeMessage && (
+            <div className={`Message ${timeMessage.type}`}>{timeMessage.text}</div>
+          )}
 
           <button type="submit" disabled={settingTime} style={{ flex: 1 }}>
             {settingTime ? 'Setting...' : 'Set Time'}
