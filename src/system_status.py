@@ -79,32 +79,9 @@ class SystemStatus:
     def _get_time_info(self):
         """Get time synchronization information as list of tuples."""
         info = []
-        
-        if instances.time_sync:
-            if instances.time_sync.is_synced:
-                # Show current time
-                info.append(('Current Time', instances.time_sync.get_time_string()))
-                info.append(('Current Date', instances.time_sync.get_date_string()))
-                
-                # Show timezone with name
-                tz_name = instances.config.get_timezone_name()
-                offset_hours = instances.time_sync.TIMEZONE_OFFSET // 3600
-                offset_minutes = abs(instances.time_sync.TIMEZONE_OFFSET % 3600) // 60
-                
-                if offset_minutes != 0:
-                    # Show minutes if not a full hour offset
-                    tz_display = f"{tz_name} (UTC{offset_hours:+d}:{offset_minutes:02d})"
-                elif offset_hours != 0:
-                    tz_display = f"{tz_name} (UTC{offset_hours:+d})"
-                else:
-                    tz_display = f"{tz_name} (UTC)"
-                
-                info.append(('Timezone', tz_display))
-            else:
-                info.append(('Time Status', 'Not synced'))
-        else:
-            info.append(('Time Status', 'TimeSync not available'))
-        
+        info.append(('Current Time', instances.time_sync.get_time_string()))
+        info.append(('Current Date', instances.time_sync.get_date_string()))
+        info.append(('Timezone', instances.time_sync.get_timeone_string()))
         return info
     
     def _get_network_info(self):

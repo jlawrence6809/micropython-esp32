@@ -5,6 +5,7 @@ import time
 from machine import RTC
 import urequests
 import ujson
+from instances import instances
 
 class TimeSync:
     """Manages NTP time synchronization."""
@@ -132,7 +133,6 @@ class TimeSync:
                     
                     # Save to config for fallback
                     if save_to_config:
-                        from instances import instances
                         instances.config.set_last_known_time(self.last_sync_time)
                         instances.config.save_config()
                     
@@ -218,6 +218,12 @@ class TimeSync:
         """Get formatted date string (YYYY-MM-DD)."""
         t = self.get_time_tuple()
         return f"{t[0]}-{t[1]:02d}-{t[2]:02d}"
+
+    def get_timeone_string(self):
+        tz_name = instances.config.get_timezone_name()
+        offset_hours = self.TIMEZONE_OFFSET // 3600
+        offset_minutes = abs(self.TIMEZONE_OFFSET % 3600) // 60
+        return f"{tz_name}:{offset_hours:+d}:{offset_minutes:02d}"
     
     def get_datetime_string(self):
         """Get formatted date and time string."""
@@ -284,7 +290,6 @@ class TimeSync:
             
             # Save to config for fallback
             if save_to_config:
-                from instances import instances
                 instances.config.set_last_known_time(self.last_sync_time)
                 instances.config.save_config()
             
@@ -302,7 +307,6 @@ class TimeSync:
             True if restored, False if no saved time available
         """
         try:
-            from instances import instances
             last_known = instances.config.get_last_known_time()
             
             if last_known is None:
