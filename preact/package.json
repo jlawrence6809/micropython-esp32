@@ -40,5 +40,8 @@
   "dependencies": {
     "preact": "^10.1.0",
     "preact-render-to-string": "^5.1.2"
+  },
+  "volta": {
+    "node": "18.20.8"
   }
 }
