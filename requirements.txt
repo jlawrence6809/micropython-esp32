@@ -6,3 +6,6 @@ esptool>=4.0
 # mpremote - Official MicroPython remote control and file management
 mpremote>=1.0
 
+# Testing (for development, not deployed to device)
+pytest>=7.0
+
