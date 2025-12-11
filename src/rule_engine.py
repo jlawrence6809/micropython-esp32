@@ -21,6 +21,8 @@ class RuleEngine:
         Uses global instances for sensors and time_sync.
         """
         self._compiled_cache = {}  # Cache compiled code objects
+        self._last_time_seconds = None  # Track last time for edge detection
+        self._current_time_seconds = None  # Track current time for consistency
         
     def time(self, hour, minute=0, second=0):
         """Helper function to convert time to seconds since midnight.
@@ -42,12 +44,41 @@ class RuleEngine:
         """Get current time in seconds since midnight.
         
         Uses TimeSync if available, otherwise falls back to sensor dummy time.
+        Returns the cached value if update_time() was called, otherwise calculates fresh.
         """
+        if self._current_time_seconds is not None:
+            return self._current_time_seconds
+        return self._calculate_current_time()
+    
+    def _calculate_current_time(self):
+        """Calculate current time from TimeSync or sensors."""
         if instances.time_sync and instances.time_sync.is_synced:
             return instances.time_sync.get_minute_of_day() * 60
         else:
             # Fallback to sensor manager's dummy time
             return instances.sensors.get_time_seconds()
+    
+    def get_last_time_seconds(self):
+        """Get the previous time value for edge detection.
+        
+        Returns the last time from before update_time() was called.
+        """
+        if self._last_time_seconds is not None:
+            return self._last_time_seconds
+        # Fallback to current time if never updated (no edge detected on first run)
+        return self.get_current_time_seconds()
+    
+    def update_time(self):
+        """Update time tracking for edge detection.
+        
+        Call this once per automation loop iteration, before evaluating rules.
+        This ensures get_time() and get_last_time() use consistent values from
+        the same source (TimeSync when available).
+        """
+        # Save previous time
+        self._last_time_seconds = self._current_time_seconds if self._current_time_seconds is not None else self._calculate_current_time()
+        # Update current time
+        self._current_time_seconds = self._calculate_current_time()
     
     def _get_safe_globals(self):
         """Create a restricted global namespace for eval.
@@ -70,7 +101,7 @@ class RuleEngine:
             'get_last_light_level': instances.sensors.get_last_light_level,
             'get_last_switch_state': instances.sensors.get_last_switch_state,
             'get_last_reset_switch_state': instances.sensors.get_last_reset_switch_state,
-            'get_last_time': instances.sensors.get_last_time,
+            'get_last_time': self.get_last_time_seconds,  # Use rule engine's tracked time for consistency
             
             # Time helper
             'time': self.time,

@@ -22,6 +22,9 @@ async def automation_loop():
             # Update all sensors (throttled internally)
             instances.sensors.update_all()
             
+            # Update rule engine time tracking (for time-based edge detection)
+            instances.rules.update_time()
+            
             # Get current relay configurations
             relay_config = instances.relays.get_relays()
             relay_list = relay_config.get('relays', [])
