@@ -10,26 +10,23 @@ import { fetchGpioOptions, fetchRelayConfig, postRelayConfig } from '../api';
 let RELAY_COUNT = 0;
 
 /**
- * Cycle through relay states:
- * Manual Off (value=false, auto=false) ->
- * Manual On (value=true, auto=false) ->
- * Auto (value=<rule result>, auto=true) ->
- * Manual Off ...
+ * Relay interaction model:
+ * - Primary click: toggle ON/OFF (changes `value` only; preserves `auto`)
+ * - Secondary "AUTO" button: toggle automation mode (changes `auto` only)
  */
-const getNextRelayState = (
+const toggleRelayValue = (
   current: Pick<RelayConfig, 'value' | 'auto'>,
-): Pick<RelayConfig, 'value' | 'auto'> => {
-  if (!current.auto && !current.value) {
-    // Manual Off -> Manual On
-    return { value: true, auto: false };
-  } else if (!current.auto && current.value) {
-    // Manual On -> Auto
-    return { value: current.value, auto: true }; // Keep current value when switching to auto
-  } else {
-    // Auto -> Manual Off
-    return { value: false, auto: false };
-  }
-};
+): Pick<RelayConfig, 'value' | 'auto'> => ({
+  value: !current.value,
+  auto: current.auto,
+});
+
+const toggleRelayAuto = (
+  current: Pick<RelayConfig, 'value' | 'auto'>,
+): Pick<RelayConfig, 'value' | 'auto'> => ({
+  value: current.value,
+  auto: !current.auto,
+});
 
 export const RelayControls = () => {
   const [relayConfigs, setRelayConfigs] = useState<RelayConfig[] | 'loading'>(
@@ -46,7 +43,7 @@ export const RelayControls = () => {
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchRelayConfig().then((json) => {
+    fetchRelayConfig().then(json => {
       RELAY_COUNT = json.count;
       setRelayConfigs(json.relays);
     });
@@ -97,7 +94,7 @@ export const RelayControls = () => {
     // Set this specific relay as updating
     setUpdatingRelay(label);
 
-    const updatedConfigs = relayConfigs.map((config) =>
+    const updatedConfigs = relayConfigs.map(config =>
       config.label === label ? { ...config, ...updates } : config,
     );
 
@@ -155,7 +152,7 @@ export const RelayControls = () => {
   return (
     <Section
       className={`RelayForm ${relayConfigs === 'loading' ? 'loading' : ''}`}
-      title="Relay Controls"
+      title='Relay Controls'
     >
       {relayConfigs === 'loading' && <div>Loading...</div>}
       {relayConfigs !== 'loading' && (
@@ -163,7 +160,7 @@ export const RelayControls = () => {
           {relayConfigs.length === 0 && (
             <div style={{ padding: '0.5rem 0' }}>No relays configured.</div>
           )}
-          {relayConfigs.map((config) => {
+          {relayConfigs.map(config => {
             const relay: Relay = config.label as Relay;
             const label = config.label;
             const isLoading = updatingRelay === label;
@@ -180,18 +177,35 @@ export const RelayControls = () => {
                 className={`ToggleSwitch ${stateClasses}`}
                 onClick={() =>
                   !isLoading &&
-                  updateRelayProperty(label, getNextRelayState(config))
+                  updateRelayProperty(label, toggleRelayValue(config))
                 }
                 title={hasError ? `Error: ${config.last_error}` : ''}
               >
-                <div
-                  className={'AutomateButton'}
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    openEditDialog(relay);
-                  }}
-                >
-                  ⛭
+                <div className={'RelaySecondaryButtons'}>
+                  <div
+                    className={'RelaySecondaryButton'}
+                    onClick={ev => {
+                      ev.stopPropagation();
+                      if (isLoading) return;
+                      updateRelayProperty(label, toggleRelayAuto(config));
+                    }}
+                    title={
+                      isAuto
+                        ? 'Automation: ON (rule-driven)'
+                        : 'Automation: OFF (manual)'
+                    }
+                  >
+                    ⟳
+                  </div>
+                  <div
+                    className={'RelaySecondaryButton'}
+                    onClick={ev => {
+                      ev.stopPropagation();
+                      openEditDialog(relay);
+                    }}
+                  >
+                    ✎
+                  </div>
                 </div>
                 {isLoading ? (
                   <span style={{ opacity: 0.7 }}>⏳ {label}</span>
@@ -225,12 +239,12 @@ export const RelayControls = () => {
               gpioOptions={gpioOptions === 'loading' ? [] : gpioOptions}
               initialConfig={
                 editingRelay
-                  ? relayConfigs.find((c) => c.label === editingRelay)
+                  ? relayConfigs.find(c => c.label === editingRelay)
                   : undefined
               }
               lastError={
                 editingRelay
-                  ? relayConfigs.find((c) => c.label === editingRelay)
+                  ? relayConfigs.find(c => c.label === editingRelay)
                       ?.last_error || null
                   : null
               }

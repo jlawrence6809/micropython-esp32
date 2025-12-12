@@ -95,10 +95,15 @@ h1 {
   background-color: green;
 }
 
-.AutomateButton {
+.RelaySecondaryButtons {
   position: absolute;
   top: 5px;
   right: 5px;
+  display: flex;
+  gap: 5px;
+}
+
+.RelaySecondaryButton {
   width: 20px;
   height: 20px;
   border-radius: 20%;
@@ -106,7 +111,7 @@ h1 {
   font-size: medium;
 }
 
-.AutomateButton:hover {
+.RelaySecondaryButton:hover {
   background-color: #282c34;
 }
 
