@@ -13,6 +13,9 @@ class WiFiManager:
     # Connection timeouts
     CONNECT_TIMEOUT = 15  # seconds
     CONNECT_RETRY_DELAY = 1  # seconds
+
+    # WebREPL default password (used if webrepl_cfg.py is missing/unconfigured)
+    DEFAULT_WEBREPL_PASSWORD = "esp32"
     
     def __init__(self):
         """Initialize WiFi manager.
@@ -237,6 +240,43 @@ class WiFiManager:
             return True
         except Exception as e:
             print(f'Failed to set hostname: {e}')
+            return False
+
+    def start_webrepl_if_configured(self):
+        """Start WebREPL if it is available and configured.
+        
+        WebREPL is configured on-device via `import webrepl_setup`, which creates
+        `webrepl_cfg.py` containing a password in `PASS`.
+        
+        Returns:
+            True if WebREPL was started, False otherwise.
+        """
+        try:
+            import webrepl
+        except Exception:
+            # webrepl module not available on this firmware/port
+            return False
+
+        try:
+            try:
+                import webrepl_cfg  # created by `import webrepl_setup`
+                pw = getattr(webrepl_cfg, "PASS", None)
+            except Exception:
+                pw = None
+
+            if not pw:
+                pw = self.DEFAULT_WEBREPL_PASSWORD
+                print(
+                    "WebREPL is not configured; starting with default password "
+                    f"'{pw}'. Run `import webrepl_setup` to set a real password."
+                )
+
+            # Passing password explicitly avoids failures if webrepl_cfg is malformed.
+            webrepl.start(password=pw)
+            print("WebREPL started")
+            return True
+        except Exception as e:
+            print(f"WebREPL failed to start: {e}")
             return False
     
     def setup_mdns(self, hostname=None):

@@ -55,13 +55,8 @@ def setup_wifi():
             print(f"Timezone: {tz_name} (UTC{offset/3600:+.1f})")
         print("=" * 50)
         
-        # Start WebREPL if in station mode
-        try:
-            import webrepl
-            webrepl.start()
-            print('WebREPL started')
-        except Exception as e:
-            print(f'WebREPL failed to start: {e}')
+        # Start WebREPL if available and configured (see wifi_manager.py)
+        instances.wifi.start_webrepl_if_configured()
     else:
         # Set LED to AP mode
         instances.led.set_state('ap_mode')
