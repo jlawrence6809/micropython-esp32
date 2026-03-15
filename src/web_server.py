@@ -95,8 +95,9 @@ class WebServer:
                 await self._send_response(writer, 405, 'Method Not Allowed')
         
         except Exception as e:
-            # Don't log ECONNABORTED - client disconnected, which is normal
-            if "ECONNABORTED" not in str(e):
+            # Don't log client disconnect errors - these are normal
+            err_str = str(e)
+            if "ECONNABORTED" not in err_str and "ENOTCONN" not in err_str:
                 print(f"REQUEST ERROR: {e}")
                 sys.print_exception(e)
             
@@ -174,8 +175,9 @@ class WebServer:
             await self._safe_drain(writer)
             
         except Exception as e:
-            # Connection error during send - log if not ECONNABORTED
-            if "ECONNABORTED" not in str(e):
+            # Connection error during send - log if not a normal disconnect
+            err_str = str(e)
+            if "ECONNABORTED" not in err_str and "ENOTCONN" not in err_str:
                 print(f"Response send error: {e}")
 
     async def _safe_drain(self, writer):
@@ -183,7 +185,8 @@ class WebServer:
         try:
             await writer.drain()
         except OSError as e:
-            if e.errno != 113:  # Not ECONNABORTED
+            # 113 = ECONNABORTED, 128 = ENOTCONN - both mean client disconnected
+            if e.errno not in (113, 128):
                 raise  # Re-raise other OS errors
             # Otherwise silently ignore - client disconnected
 
