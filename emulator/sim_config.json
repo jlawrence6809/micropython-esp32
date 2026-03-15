@@ -1,0 +1,7 @@
+{
+    "temperature": 25.0,
+    "humidity": 50.0,
+    "light_level": 2000,
+    "switch_state": false,
+    "reset_switch_state": false
+}
