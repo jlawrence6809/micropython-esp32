@@ -1,0 +1,7 @@
+# Device configs contain WiFi passwords - don't commit them
+*/config.json
+*/relays.json
+
+# But do commit the README and any templates
+!README.md
+!**/config.example.json

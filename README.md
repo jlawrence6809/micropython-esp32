@@ -1,114 +1,97 @@
-# MicroPython ESP32-S3 Setup
+# MicroPython ESP32 IoT Framework
 
-This folder contains scripts to flash MicroPython onto the ESP32-S3-DevKitC-1-N16R8V board.
+A general-purpose MicroPython automation platform for ESP32 microcontrollers. Provides JSON-based configuration, a rule engine for relay automation, sensor management, and a Preact web UI -- all configurable without code changes.
 
-## Board Specifications
+## Supported Boards
 
-- **Board**: ESP32-S3-DevKitC-1-N16R8V
-- **Flash**: 16MB
-- **PSRAM**: 8MB
-- **USB**: Native USB support (USB-OTG)
+- **NodeMCU-32S** - Original ESP32 (`nodemcu_32s.json`)
+- **ESP32-S3-DevKitC-1-N16R8V** - ESP32-S3 with 16MB flash / 8MB PSRAM (`esp32s3_devkitc_1_n16r8v.json`)
+- **ESP32-S3 External Antenna** - ESP32-S3 variant (`esp32s3_antenna_n16r8v.json`)
+- **ESP32-C6 DevKit** - ESP32-C6 (`esp32c6_devkit.json`)
 
 ## Quick Start
 
 ### 1. Install Dependencies
 
 ```bash
-pip install esptool
+pipx install esptool
+pipx install adafruit-ampy
 ```
 
-### 2. Download MicroPython Firmware
+### 2. Download Firmware
 
 ```bash
 ./scripts/download_firmware.sh
 ```
 
-This will download the latest stable MicroPython firmware for ESP32-S3.
+Edit the script to uncomment the firmware URL for your chip variant (ESP32 vs ESP32-S3).
 
-### 3. Flash MicroPython
-
-Connect your ESP32-S3 board via USB, then run:
+### 3. Create a Device Config
 
 ```bash
-./scripts/flash.sh
+mkdir -p device_configs/myboard
+cat > device_configs/myboard/config.json << 'EOF'
+{
+  "wifi": { "ssid": "MyNetwork", "password": "MyPassword" },
+  "hostname": "myboard",
+  "board": "nodemcu_32s.json"
+}
+EOF
 ```
 
-The script will:
+See `device_configs/README.md` for full config schema including sensor pins and relay rules.
 
-- Detect the USB port automatically
-- Erase the flash
-- Flash MicroPython firmware
-- Reset the board
+### 4. Provision the Board
 
-### 4. Deploy Code
-
-Deploy source code (Python scripts):
+Connect the board via USB, then:
 
 ```bash
-./scripts/deploy_src.sh
+./scripts/provision.sh /dev/tty.usbserial-0001 myboard
 ```
 
-Deploy web interface (Preact app):
+This will erase flash, write MicroPython firmware, upload all source code, board configs, device config, and the web UI in one step.
+
+If the board won't connect during flash, hold the **BOOT** button while the script connects.
+
+### 5. Access the Web UI
+
+After provisioning, the board connects to WiFi and prints its IP to serial. Open it in a browser to see relay controls, sensor readings, and system info.
+
+If no WiFi is configured, the board starts an AP named `<hostname>-setup` (password: `12345678`). Connect to it and configure WiFi at `http://192.168.4.1`.
+
+## Updating Code
+
+After the initial provision, use the deploy scripts for incremental updates:
 
 ```bash
-./scripts/deploy_web.sh
+./scripts/deploy_src.sh     # Upload Python source files
+./scripts/deploy_web.sh     # Build and upload the Preact web UI
 ```
 
 ## Understanding MicroPython Execution
 
-### Running vs. REPL
-
 **Important:** MicroPython is single-threaded. It can either run your code (`main.py`) OR provide an interactive prompt (REPL), but not both at the same time.
 
-- **Background Mode (Normal Operation)**:
+- **Running mode**: On boot, `boot.py` initializes the system, then `main.py` starts the web server and automation loop.
+- **REPL mode**: Connecting via serial and pressing Enter/Ctrl-C interrupts the running code and drops into a `>>>` prompt. This kills the web server.
+- **Restart**: From REPL, press Ctrl-D for a soft reboot, or run `import machine; machine.reset()` for a hard reboot.
 
-  - When the board boots, it runs `boot.py` and then `main.py`.
-  - Our `main.py` starts the Web Server and enters an infinite loop.
-  - **The Web Server is ONLY active in this mode.**
+### Viewing Logs Without Stopping the Server
 
-- **REPL Mode (Interactive)**:
-  - When you connect via `./scripts/monitor.sh` or `mpremote`, the board stops the running `main.py` (killing the web server) to give you a `>>>` prompt.
-  - This is normal! It's how you debug.
-  - To restart the server while in REPL, type:
-    ```python
-    import machine
-    machine.reset()
-    ```
-    (This will disconnect your REPL session effectively).
+1. Connect via `./scripts/monitor.sh`
+2. Press the **RESET** button on the board
+3. Watch the boot logs scroll by
+4. **Do not press any keys** or you will interrupt the server
 
-### Viewing Logs Without Stopping Server
+## WebREPL
 
-To see what the server is doing without killing it:
+WebREPL doesn't work over HTTPS. Open in an incognito window:
 
-1.  Connect via USB.
-2.  Run `./scripts/monitor.sh`.
-3.  **Immediately** press the RESET button on the board.
-4.  You will see the boot logs.
-5.  **Do not press any keys** (Enter/Ctrl-C), or you will interrupt the server and drop into REPL.
-
-## Manual Flashing
-
-If the automatic script doesn't work, you can flash manually:
-
-```bash
-# Find your device port
-ls /dev/tty.usb*
-
-# Erase flash
-esptool.py --chip esp32s3 --port /dev/tty.usbmodem* erase_flash
-
-# Flash firmware
-esptool.py --chip esp32s3 --port /dev/tty.usbmodem* write_flash -z 0 firmware/ESP32_GENERIC_S3-*.bin
 ```
-
-## Webrepl
-
-It doesn't work over https, and opening the page will automatically redirect to https unless it is opened in an incognito window:
-
-http://micropython.org/webrepl/#10.0.0.58:8266
+http://micropython.org/webrepl/#<board-ip>:8266
+```
 
 ## Resources
 
 - [MicroPython Documentation](https://docs.micropython.org/)
-- [ESP32-S3 Quick Reference](https://docs.micropython.org/en/latest/esp32/quickref.html)
-- [ESP32-S3-DevKitC-1 Datasheet](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html)
+- [ESP32 Quick Reference](https://docs.micropython.org/en/latest/esp32/quickref.html)

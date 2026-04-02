@@ -34,6 +34,11 @@ echo ""
 echo "Uploading source files..."
 
 cd "$SRC_DIR"
+
+# Upload boot.py and main.py LAST to avoid the board starting its boot
+# sequence mid-deploy (which blocks subsequent uploads)
+DEFERRED_FILES=("boot.py" "main.py")
+
 for file in *.py; do
     if [ -f "$file" ]; then
         # Check if file is in exclude list
@@ -50,6 +55,27 @@ for file in *.py; do
             continue
         fi
 
+        # Defer boot files to the end
+        for deferred in "${DEFERRED_FILES[@]}"; do
+            if [ "$file" == "$deferred" ]; then
+                skip=1
+                break
+            fi
+        done
+
+        if [ $skip -eq 1 ]; then
+            continue
+        fi
+
+        echo "Uploading $file..."
+        "$REMOTE_SCRIPT" fs cp "$file" ":$file"
+    fi
+done
+
+echo ""
+echo "Uploading boot files (last)..."
+for file in "${DEFERRED_FILES[@]}"; do
+    if [ -f "$file" ]; then
         echo "Uploading $file..."
         "$REMOTE_SCRIPT" fs cp "$file" ":$file"
     fi
