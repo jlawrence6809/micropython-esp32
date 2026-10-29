@@ -1,0 +1,19 @@
+{
+  "format_version": 1,
+  "hostname": "relay-x8-bench",
+  "relays": [
+    {"pin": 32, "label": "K1", "rule": "return nil", "value": false, "auto": false, "isInverted": false, "defaultValue": false, "defaultAuto": false},
+    {"pin": 33, "label": "K2", "rule": "return nil", "value": false, "auto": false, "isInverted": false, "defaultValue": false, "defaultAuto": false},
+    {"pin": 25, "label": "K3", "rule": "return nil", "value": false, "auto": false, "isInverted": false, "defaultValue": false, "defaultAuto": false},
+    {"pin": 26, "label": "K4", "rule": "return nil", "value": false, "auto": false, "isInverted": false, "defaultValue": false, "defaultAuto": false},
+    {"pin": 27, "label": "K5", "rule": "return nil", "value": false, "auto": false, "isInverted": false, "defaultValue": false, "defaultAuto": false},
+    {"pin": 14, "label": "K6", "rule": "return nil", "value": false, "auto": false, "isInverted": false, "defaultValue": false, "defaultAuto": false},
+    {"pin": 12, "label": "K7", "rule": "return nil", "value": false, "auto": false, "isInverted": false, "defaultValue": false, "defaultAuto": false},
+    {"pin": 13, "label": "K8", "rule": "return nil", "value": false, "auto": false, "isInverted": false, "defaultValue": false, "defaultAuto": false}
+  ],
+  "sensor_pins": {"i2c_scl": -1, "i2c_sda": -1, "ds18b20": -1, "photo_sensor": -1, "light_switch": -1, "reset_switch": -1},
+  "timezone": null,
+  "clock_source": "manual",
+  "schedule_policy": "edge_no_catchup",
+  "sensors_enabled": false
+}

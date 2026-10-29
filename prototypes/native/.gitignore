@@ -1,0 +1,7 @@
+build*/
+sdkconfig
+sdkconfig.old
+components/lua/vendor/
+*.local.*
+managed_components/
+__pycache__/

@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.16)
+# OTA compatibility contract; code identity is the full ELF hash.
+if(NOT DEFINED PROJECT_VER)
+    set(PROJECT_VER "native-profile1")
+endif()
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(garden_native_probe)
+if(NOT IDF_TARGET STREQUAL "esp32s3" AND NOT IDF_TARGET STREQUAL "esp32")
+    message(FATAL_ERROR "Garden supports only esp32s3 and esp32")
+endif()

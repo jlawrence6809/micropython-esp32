@@ -1,0 +1,2 @@
+# SPARE BOARD TEST ONLY. This image intentionally fails a pending OTA boot.
+CONFIG_BENCH_OTA_FAIL_PENDING_BOOT=y

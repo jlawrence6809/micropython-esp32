@@ -1,0 +1,4 @@
+# Compile-only until the software release gates and attended hardware plan are ready.
+CONFIG_GARDEN_CONTROLLER_IO=y
+# CONFIG_BENCH_IO_SELFTEST is not set
+# CONFIG_BENCH_OTA_FAIL_PENDING_BOOT is not set

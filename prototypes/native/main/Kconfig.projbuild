@@ -1,0 +1,61 @@
+menu "Garden controller I/O"
+    config GARDEN_CONTROLLER_IO
+        bool "Build real relay-controller backend (requires relay-profile1 contract)"
+        default n
+        help
+            Does NOT arm outputs by itself. A matching saved layout and explicit
+            USB arming are also required. Never enable in the normal bench build.
+endmenu
+
+menu "Garden Wi-Fi experiment"
+    config GARDEN_WIFI_SINGLE_AP_TRIAL
+        bool "TEMPORARY: try one AP for 20s, then restore original RAM configuration"
+        default n
+        help
+            Unarmed maintenance only. Withholds network health until original
+            config restored, allowing pending-image rollback on SDK errors.
+            No NVS writes; repeats on reboot. Restore normal image after test.
+    config GARDEN_WIFI_TRIAL_BSSID
+        string "Trial AP BSSID (private release config only)"
+        depends on GARDEN_WIFI_SINGLE_AP_TRIAL
+        default ""
+    config GARDEN_WIFI_DISABLE_MODEM_SLEEP
+        bool "Explicit per-image experiment: disable Wi-Fi modem sleep"
+        default n
+        help
+            Calls esp_wifi_set_ps(WIFI_PS_NONE) before association. Increases
+            power consumption; no NVS/profile or router change. Only enable in
+            the separately approved Sunroom test build, not shared defaults or
+            Barn. OFF preserves the SDK default. Roll back to the prior image
+            to restore that behavior; GPIO arming is entirely independent.
+endmenu
+
+menu "Garden spare-board fault injection"
+    config BENCH_WATCHDOG_STALL
+        bool "TEST ONLY: stall a task AFTER successful boot validation"
+        default n
+        help
+            Memory-only spare diagnostic. Repeatedly reboots after a runtime
+            watchdog timeout until normal firmware is restored. Never production.
+    config BENCH_WATCHDOG_STALL_TASK
+        int "Task to stall: rules=0, network=1, USB=2, inputs=3"
+        depends on BENCH_WATCHDOG_STALL
+        range 0 3
+        default 0
+    config BENCH_OTA_FAIL_PENDING_BOOT
+        bool "TEST ONLY: reboot a pending OTA image before validation"
+        default n
+        help
+            Used solely to prove rollback on the disconnected spare board.
+            Never enable in a production image. A pending image reboots before
+            starting the runtime and should roll back to the previous valid slot.
+    config BENCH_IO_SELFTEST
+        bool "TEST ONLY: physical I/O selftest on disconnected spare"
+        depends on IDF_TARGET_ESP32S3
+        default n
+        help
+            Briefly drives GPIO4, biases GPIO5 using internal pull resistors,
+            and probes I2C on SCL1/SDA2. Releases resources before runtime.
+            Only for the authorized spare with NO external equipment attached.
+            Never enable on a live controller. Generic API remains simulated.
+endmenu

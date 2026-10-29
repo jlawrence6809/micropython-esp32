@@ -1,0 +1,2 @@
+# DISCONNECTED SPARE ONLY. Physical GPIO4/5 test and SCL1/SDA2 probe on each boot.
+CONFIG_BENCH_IO_SELFTEST=y
